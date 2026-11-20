@@ -1,54 +1,45 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Catálogo de Materiales - Smart Power On</title>
-    <link
-      rel="stylesheet"
-      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
-    />
-  </head>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head th:replace="fragments/head :: head('Catálogo de Materiales')"></head>
   <body class="bg-light">
     <div th:replace="~{fragments/navbar :: menu}"></div>
 
-    <div class="container-fluid px-4 pb-5">
-      <div
-        class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"
-      >
+    <main class="app-main container-fluid px-3 px-lg-4 pb-5">
+      <div class="page-header">
         <div>
-          <h4 class="mb-0">Inventario y Catálogo por Proyecto</h4>
-          <small class="text-muted"
-            >Control de ubicación física en almacén y trazabilidad por
-            obra</small
-          >
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-box-seam"></i></span>
+            Inventario y Catálogo por Proyecto
+          </h4>
+          <p class="page-subtitle">Control de ubicación física en almacén y trazabilidad por obra</p>
         </div>
-        <div class="d-flex gap-2">
-          <select
-            id="filtroProyecto"
-            aria-label="Filtrar por proyecto"
-            class="form-select"
-            style="width: 300px"
-            onchange="filtrarTabla()"
-          >
-            <option value="">Todos los proyectos</option>
-            <option
-              th:each="p : ${proyectos}"
-              th:value="${p.codigo}"
-              th:text="${p.codigo + ' - ' + p.cliente}"
-            ></option>
-          </select>
-          <button
-            th:if="${rolActual == 'ALMACENERO' or rolActual == 'ADMIN'}"
-            class="btn btn-primary text-nowrap"
-            data-bs-toggle="modal"
-            data-bs-target="#modalMaterial"
-          >
-            + Nuevo Material
+        <div class="d-flex gap-2 flex-wrap">
+          <button th:if="${rolActual == 'ALMACENERO' or rolActual == 'ADMIN'}"
+                  class="btn btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#modalMaterial">
+            <i class="bi bi-plus-lg"></i> Nuevo Material
           </button>
         </div>
       </div>
 
-      <div class="card shadow-sm border-0">
+      <div class="card card-spo">
+        <div class="tabla-toolbar">
+          <div class="buscador-campo input-group" style="max-width:320px;">
+            <input type="hidden" id="filtroProyectoValor" />
+            <input type="text" id="filtroProyectoTexto" class="form-control placeholder-muted"
+                   placeholder="Filtrar por proyecto (todos)" readonly />
+            <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorProyectoFiltro()" title="Buscar proyecto">
+              <i class="bi bi-search"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="limpiarFiltroProyecto()" title="Mostrar todos">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="tabla-search ms-auto">
+            <i class="bi bi-search"></i>
+            <input type="text" id="busquedaCatalogo" class="form-control" placeholder="Buscar código, material, ubicación..." />
+          </div>
+        </div>
+
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0" id="tablaCatalogo">
             <thead class="table-dark">
@@ -64,207 +55,223 @@
               </tr>
             </thead>
             <tbody>
-              <tr
-                th:each="m : ${materiales}"
-                th:data-proyecto="${m.proyectoAsignado}"
-                th:classappend="${m.stockActual <= m.stockMinimo} ? 'table-warning' : ''"
-              >
+              <tr th:each="m : ${materiales}"
+                  th:data-proyecto="${m.proyectoAsignado}"
+                  th:classappend="${m.stockActual <= m.stockMinimo} ? 'table-warning' : ''">
                 <td>
-                  <span
-                    class="badge"
-                    th:classappend="${m.proyectoAsignado != null and m.proyectoAsignado.contains('S02')} ? 'bg-info text-dark' : 'bg-primary'"
-                    th:text="${m.proyectoAsignado ?: 'Stock General'}"
-                  ></span>
+                  <span class="badge"
+                        th:classappend="${m.proyectoAsignado != null and m.proyectoAsignado.contains('S02')} ? 'bg-info text-dark' : 'bg-primary'"
+                        th:text="${m.proyectoAsignado ?: 'Stock General'}"></span>
                 </td>
                 <td class="fw-bold text-nowrap" th:text="${m.codigo}"></td>
                 <td th:text="${m.nombre}"></td>
-                <td
-                  class="small text-muted"
-                  th:text="${m.especificacionTecnica}"
-                ></td>
-                <td
-                  class="small fw-semibold text-dark"
-                  th:text="${m.ubicacion ?: 'Sin asignar'}"
-                ></td>
-                <td
-                  class="small text-nowrap"
-                  th:text="${m.fechaIngreso != null ? #temporals.format(m.fechaIngreso, 'dd/MM/yyyy HH:mm') : '-'}"
-                ></td>
+                <td class="small text-muted text-truncate-2" th:text="${m.especificacionTecnica}"></td>
+                <td class="small fw-semibold text-dark" th:text="${m.ubicacion ?: 'Sin asignar'}"></td>
+                <td class="small text-nowrap" th:text="${m.fechaIngreso != null ? #temporals.format(m.fechaIngreso, 'dd/MM/yyyy HH:mm') : '-'}"></td>
                 <td class="fw-bold" th:text="${m.stockActual}"></td>
                 <td th:text="${m.stockMinimo}"></td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(materiales)}">
+                <td colspan="8" class="text-center text-muted py-4">No hay materiales registrados.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-    </div>
-    <!-- Modal Nuevo Material con Proyecto Dinámico y Ubicación -->
+    </main>
+
+    <!-- Modal Nuevo Material -->
     <div class="modal fade" id="modalMaterial" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
-          <div class="modal-header bg-dark text-white">
-            <h5 class="modal-title">Registrar Material / Equipo en Almacén</h5>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="modal"
-            ></button>
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-box-seam"></i> Registrar Material / Equipo en Almacén</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <form id="formMaterial">
             <div class="modal-body">
               <div class="row g-2 mb-2">
                 <div class="col-md-6">
-                  <label
-                    for="proyectoAsignado"
-                    class="form-label fw-semibold small"
-                    >Proyecto Destino *</label
-                  >
-                  <select id="proyectoAsignado" class="form-select" required>
-                    <option
-                      th:each="p : ${proyectos}"
-                      th:value="${p.codigo}"
-                      th:text="${p.codigo + ' - ' + p.cliente}"
-                    ></option>
-                  </select>
+                  <label class="form-label fw-semibold small">Proyecto Destino *</label>
+                  <div class="buscador-campo input-group">
+                    <input type="hidden" id="proyectoAsignado" />
+                    <input type="text" id="proyectoAsignadoTexto" class="form-control placeholder-muted"
+                           placeholder="Buscar proyecto destino..." readonly required />
+                    <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorProyectoForm()">
+                      <i class="bi bi-search"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="limpiarBuscador('proyectoAsignado')" title="Limpiar">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
                 </div>
                 <div class="col-md-6">
-                  <label for="ubicacion" class="form-label fw-semibold small"
-                    >Ubicación Física (Pasillo / Anaquel / Piso) *</label
-                  >
-                  <input
-                    type="text"
-                    id="ubicacion"
-                    class="form-control"
-                    placeholder="Ej. Pasillo 1 - Anaquel 2 - Piso 1"
-                    required
-                  />
+                  <label for="ubicacion" class="form-label fw-semibold small">Ubicación Física (Pasillo / Anaquel / Piso) *</label>
+                  <input type="text" id="ubicacion" class="form-control" placeholder="Ej. Pasillo 1 - Anaquel 2 - Piso 1" required />
                 </div>
               </div>
 
               <div class="row g-2 mb-2">
                 <div class="col-md-4">
-                  <label for="codigo" class="form-label fw-semibold small"
-                    >Código / MLFB Único *</label
-                  >
-                  <input
-                    type="text"
-                    id="codigo"
-                    class="form-control"
-                    placeholder="Ej. P1C972307"
-                    required
-                  />
+                  <label for="codigo" class="form-label fw-semibold small">Código / MLFB Único *</label>
+                  <input type="text" id="codigo" class="form-control" placeholder="Ej. P1C972307" required />
                 </div>
                 <div class="col-md-8">
-                  <label for="nombre" class="form-label fw-semibold small"
-                    >Nombre del Material o Equipo *</label
-                  >
-                  <input
-                    type="text"
-                    id="nombre"
-                    class="form-control"
-                    required
-                  />
+                  <label for="nombre" class="form-label fw-semibold small">Nombre del Material o Equipo *</label>
+                  <input type="text" id="nombre" class="form-control" required />
                 </div>
               </div>
 
               <div class="mb-2">
-                <label
-                  for="especificacionTecnica"
-                  class="form-label fw-semibold small"
-                  >Especificación Técnica *</label
-                >
-                <textarea
-                  id="especificacionTecnica"
-                  class="form-control"
-                  rows="2"
-                  required
-                ></textarea>
+                <label for="especificacionTecnica" class="form-label fw-semibold small">Especificación Técnica *</label>
+                <textarea id="especificacionTecnica" class="form-control" rows="2" required></textarea>
               </div>
 
               <div class="row g-2">
                 <div class="col-md-6">
-                  <label for="categoria" class="form-label fw-semibold small"
-                    >Categoría</label
-                  >
+                  <label for="categoria" class="form-label fw-semibold small">Categoría</label>
                   <select id="categoria" class="form-select">
                     <option value="Tableros">Tableros</option>
                     <option value="Siprotec 5">Siprotec 5</option>
                     <option value="MCB">MCB / Interruptores</option>
                     <option value="Bornera">Borneras</option>
-                    <option value="Telecomunicaciones">
-                      Telecomunicaciones
-                    </option>
+                    <option value="Telecomunicaciones">Telecomunicaciones</option>
                     <option value="Accesorios">Accesorios</option>
                   </select>
                 </div>
                 <div class="col-md-6">
-                  <label for="stockMinimo" class="form-label fw-semibold small"
-                    >Stock Mínimo *</label
-                  >
-                  <input
-                    type="number"
-                    min="0"
-                    id="stockMinimo"
-                    class="form-control"
-                    value="1"
-                    required
-                  />
+                  <label for="stockMinimo" class="form-label fw-semibold small">Stock Mínimo *</label>
+                  <input type="number" min="0" id="stockMinimo" class="form-control" value="1" required />
                 </div>
               </div>
             </div>
             <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal"
-              >
-                Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary">
-                Guardar en Inventario
-              </button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar en Inventario</button>
             </div>
           </form>
         </div>
       </div>
     </div>
-    <script
-      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
-    ></script>
-    <script>
-      function filtrarTabla() {
-        const filtro = document.getElementById("filtroProyecto").value;
-        document.querySelectorAll("#tablaCatalogo tbody tr").forEach((tr) => {
-          const proy = tr.getAttribute("data-proyecto") || "";
-          tr.style.display = !filtro || proy === filtro ? "" : "none";
+
+    <div th:replace="~{fragments/buscador-modal :: buscador}"></div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script th:inline="javascript">
+      const PROYECTOS = /*[[${proyectos.![{ 'idProyecto': idProyecto, 'codigo': codigo, 'cliente': cliente, 'responsable': responsable }]}]]*/ [];
+    </script>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script th:inline="javascript">
+      // Normaliza el array de proyectos (puede venir con campos null)
+      const proyectosData = (PROYECTOS || []).map((p) => ({
+        idProyecto: p.idProyecto,
+        codigo: p.codigo || "",
+        cliente: p.cliente || "",
+        responsable: p.responsable || "",
+      }));
+
+      const columnasProyecto = [
+        { titulo: "Código", campo: "codigo", clase: "fw-bold" },
+        { titulo: "Cliente / Obra", campo: "cliente" },
+        { titulo: "Responsable", campo: "responsable" },
+      ];
+
+      // Buscador de proyecto para el FILTRO de la tabla
+      function abrirBuscadorProyectoFiltro() {
+        SPO.buscadorModal.abrir({
+          titulo: "Filtrar por proyecto",
+          icono: "bi-kanban",
+          datos: proyectosData,
+          placeholder: "Buscar por código o cliente...",
+          buscarEn: ["codigo", "cliente", "responsable"],
+          columnas: columnasProyecto,
+          vacio: "No se encontraron proyectos.",
+          alSeleccionar: (p) => {
+            document.getElementById("filtroProyectoValor").value = p.codigo;
+            document.getElementById("filtroProyectoTexto").value = p.codigo + " — " + p.cliente;
+            aplicarFiltros();
+          },
+        });
+      }
+      function limpiarFiltroProyecto() {
+        document.getElementById("filtroProyectoValor").value = "";
+        document.getElementById("filtroProyectoTexto").value = "";
+        aplicarFiltros();
+      }
+
+      // Buscador de proyecto para el FORMULARIO de nuevo material
+      function abrirBuscadorProyectoForm() {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar proyecto destino",
+          icono: "bi-kanban",
+          datos: proyectosData,
+          placeholder: "Buscar por código o cliente...",
+          buscarEn: ["codigo", "cliente", "responsable"],
+          columnas: columnasProyecto,
+          vacio: "No se encontraron proyectos.",
+          alSeleccionar: (p) => {
+            document.getElementById("proyectoAsignado").value = p.codigo;
+            document.getElementById("proyectoAsignadoTexto").value = p.codigo + " — " + p.cliente;
+          },
         });
       }
 
-      document
-        .getElementById("formMaterial")
-        ?.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const data = {
-            proyectoAsignado: document.getElementById("proyectoAsignado").value,
-            ubicacion: document.getElementById("ubicacion").value.trim(),
-            codigo: document.getElementById("codigo").value.trim(),
-            nombre: document.getElementById("nombre").value.trim(),
-            especificacionTecnica: document
-              .getElementById("especificacionTecnica")
-              .value.trim(),
-            categoria: document.getElementById("categoria").value,
-            stockMinimo: Number.parseInt(
-              document.getElementById("stockMinimo").value,
-            ),
-          };
-          const res = await fetch("/api/almacen/materiales", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-          });
-          if (res.ok) location.reload();
-          else alert((await res.json()).error);
+      function limpiarBuscador(idBase) {
+        document.getElementById(idBase).value = "";
+        document.getElementById(idBase + "Texto").value = "";
+      }
+
+      // Filtro combinado: proyecto (modal) + texto libre, gestionado por el paginador
+      function aplicarFiltros() {
+        SPO.paginacion.refrescar("tablaCatalogo");
+      }
+
+      // Paginación (>100 registros) — texto libre + filtro de proyecto vía extraFiltro
+      SPO.paginacion.init("tablaCatalogo", {
+        porPagina: 100,
+        buscarInput: "busquedaCatalogo",
+        extraFiltro: (tr) => {
+          const proy = document.getElementById("filtroProyectoValor").value.trim();
+          if (!proy) return true;
+          return (tr.getAttribute("data-proyecto") || "") === proy;
+        },
+      });
+
+      // Alta de material vía REST
+      document.getElementById("formMaterial")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = {
+          proyectoAsignado: document.getElementById("proyectoAsignado").value,
+          ubicacion: document.getElementById("ubicacion").value.trim(),
+          codigo: document.getElementById("codigo").value.trim(),
+          nombre: document.getElementById("nombre").value.trim(),
+          especificacionTecnica: document.getElementById("especificacionTecnica").value.trim(),
+          categoria: document.getElementById("categoria").value,
+          stockMinimo: parseInt(document.getElementById("stockMinimo").value, 10),
+        };
+        if (!data.proyectoAsignado) {
+          SPO.toast("Seleccione el proyecto destino.", "warning");
+          return;
+        }
+        const res = await fetch("/api/almacen/materiales", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
         });
+        if (res.ok) {
+          SPO.toast("Material registrado correctamente.", "success");
+          setTimeout(() => location.reload(), 700);
+        } else {
+          const err = await res.json().catch(() => ({ error: "Error al registrar." }));
+          SPO.toast(err.error || "Error al registrar.", "danger");
+        }
+      });
+
+      // Paginación (>100 registros) — la búsqueda libre la alimenta
+      SPO.paginacion.init("tablaCatalogo", {
+        porPagina: 100,
+        buscarInput: "busquedaCatalogo",
+      });
     </script>
   </body>
 </html>

@@ -1,56 +1,122 @@
 <!doctype html>
 <html xmlns:th="http://thymeleaf.org" lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Trazabilidad de Materiales - Smart Power On</title>
-    <link
-      rel="stylesheet"
-      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
-    />
-  </head>
+  <head th:replace="fragments/head :: head('Trazabilidad de Materiales')"></head>
   <body class="bg-light">
     <div th:replace="~{fragments/navbar :: menu}"></div>
 
-    <div class="container">
-      <h4 class="mb-3">Kardex y Trazabilidad Histórica por Material</h4>
-      <div class="card shadow-sm">
-        <table class="table table-striped align-middle mb-0">
-          <thead class="table-dark">
-            <tr>
-              <th>Fecha y Hora</th>
-              <th>Material</th>
-              <th>Tipo Movimiento</th>
-              <th>Cantidad</th>
-              <th>Documento / Proyecto</th>
-              <th>Usuario Responsable</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr th:each="t : ${movimientos}">
-              <td
-                th:text="${#temporals.format(t.fechaMovimiento, 'dd/MM/yyyy HH:mm')}"
-              ></td>
-              <td
-                th:text="${t.material.codigo + ' - ' + t.material.nombre}"
-              ></td>
-              <td>
-                <span
-                  class="badge bg-dark"
-                  th:text="${t.tipoMovimiento}"
-                ></span>
-              </td>
-              <td class="fw-bold" th:text="${t.cantidad}"></td>
-              <td
-                th:text="${t.proyecto != null ? t.proyecto.codigo : (t.ordenCompra != null ? t.ordenCompra.codigo : '-')}"
-              ></td>
-              <td th:text="${t.usuario.nombreCompleto}"></td>
-            </tr>
-          </tbody>
-        </table>
+    <main class="app-main container pb-5">
+      <div class="page-header">
+        <div>
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-clock-history"></i></span>
+            Kardex y Trazabilidad Histórica por Material
+          </h4>
+          <p class="page-subtitle">Movimientos de entrada, salida y devolución registrados en el sistema</p>
+        </div>
       </div>
-    </div>
-    <script
-      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
-    ></script>
+
+      <div class="card card-spo">
+        <div class="tabla-toolbar">
+          <div class="buscador-campo input-group" style="max-width:340px;">
+            <input type="hidden" id="filtroMaterialValor" />
+            <input type="text" id="filtroMaterialTexto" class="form-control placeholder-muted" placeholder="Filtrar por material (todos)" readonly />
+            <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorMaterialFiltro()" title="Buscar material">
+              <i class="bi bi-search"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="limpiarFiltroMaterial()" title="Todos">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="tabla-search ms-auto">
+            <i class="bi bi-search"></i>
+            <input type="text" id="busquedaTrazabilidad" class="form-control" placeholder="Buscar por movimiento, documento o usuario..." />
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped align-middle mb-0" id="tablaTrazabilidad">
+            <thead class="table-dark">
+              <tr>
+                <th>Fecha y Hora</th>
+                <th>Material</th>
+                <th>Tipo Movimiento</th>
+                <th>Cantidad</th>
+                <th>Documento / Proyecto</th>
+                <th>Usuario Responsable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(movimientos)}" data-spo-ignore="true">
+                <td colspan="6" class="text-center text-muted py-4">No hay movimientos registrados.</td>
+              </tr>
+              <tr th:each="t : ${movimientos}" th:data-material="${t.material.codigo}">
+                <td th:text="${#temporals.format(t.fechaMovimiento, 'dd/MM/yyyy HH:mm')}"></td>
+                <td th:text="${t.material.codigo + ' - ' + t.material.nombre}"></td>
+                <td><span class="badge bg-dark" th:text="${t.tipoMovimiento}"></span></td>
+                <td class="fw-bold" th:text="${t.cantidad}"></td>
+                <td th:text="${t.proyecto != null ? t.proyecto.codigo : (t.ordenCompra != null ? t.ordenCompra.codigo : '-')}"></td>
+                <td th:text="${t.usuario.nombreCompleto}"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <div th:replace="~{fragments/buscador-modal :: buscador}"></div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script>
+      // Construye la lista única de materiales a partir de las filas renderizadas
+      function materialesUnicos() {
+        const seen = new Set();
+        const lista = [];
+        document.querySelectorAll("#tablaTrazabilidad tbody tr").forEach((tr) => {
+          if (tr.dataset.spoIgnore) return;
+          const codigo = tr.getAttribute("data-material") || "";
+          if (!codigo || seen.has(codigo)) return;
+          seen.add(codigo);
+          const celda = tr.children[1]?.textContent || "";
+          const nombre = celda.includes(" - ") ? celda.split(" - ").slice(1).join(" - ").trim() : celda;
+          lista.push({ codigo, nombre });
+        });
+        return lista;
+      }
+
+      function abrirBuscadorMaterialFiltro() {
+        SPO.buscadorModal.abrir({
+          titulo: "Filtrar trazabilidad por material",
+          icono: "bi-box-seam",
+          datos: materialesUnicos(),
+          placeholder: "Buscar por código o nombre...",
+          buscarEn: ["codigo", "nombre"],
+          columnas: [
+            { titulo: "Código", campo: "codigo", clase: "fw-bold text-nowrap" },
+            { titulo: "Equipo / Material", campo: "nombre" },
+          ],
+          vacio: "No se encontraron materiales.",
+          alSeleccionar: (m) => {
+            document.getElementById("filtroMaterialValor").value = m.codigo;
+            document.getElementById("filtroMaterialTexto").value = m.codigo + " — " + m.nombre;
+            SPO.paginacion.refrescar("tablaTrazabilidad");
+          },
+        });
+      }
+
+      function limpiarFiltroMaterial() {
+        document.getElementById("filtroMaterialValor").value = "";
+        document.getElementById("filtroMaterialTexto").value = "";
+        SPO.paginacion.refrescar("tablaTrazabilidad");
+      }
+
+      SPO.paginacion.init("tablaTrazabilidad", {
+        porPagina: 100,
+        buscarInput: "busquedaTrazabilidad",
+        extraFiltro: (tr) => {
+          const cod = document.getElementById("filtroMaterialValor").value.trim();
+          if (!cod) return true;
+          return (tr.getAttribute("data-material") || "") === cod;
+        },
+      });
+    </script>
   </body>
 </html>

@@ -1,245 +1,125 @@
 <!doctype html>
 <html xmlns:th="http://thymeleaf.org" lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Control de Calidad FAT - Smart Power On</title>
-    <link
-      rel="stylesheet"
-      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
-    />
-  </head>
+  <head th:replace="fragments/head :: head('Control de Calidad FAT')"></head>
   <body class="bg-light">
     <div th:replace="~{fragments/navbar :: menu}"></div>
 
-    <div class="container pb-5">
-      <h4 class="mb-3">Control de Calidad y Pruebas FAT</h4>
+    <main class="app-main container pb-5">
+      <div class="page-header">
+        <div>
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-clipboard-check"></i></span>
+            Control de Calidad y Pruebas FAT
+          </h4>
+          <p class="page-subtitle">Protocolo de inspección técnica y certificación por proyecto</p>
+        </div>
+      </div>
 
       <div class="row g-4">
         <div class="col-lg-6" th:if="${rolActual == 'INSPECTOR'}">
-          <div class="card shadow-sm border-0">
-            <div class="card-header bg-dark text-white fw-semibold">
-              Protocolo de Inspección Técnica
-            </div>
+          <div class="card card-spo">
+            <div class="card-header"><i class="bi bi-clipboard-check"></i> Protocolo de Inspección Técnica</div>
             <div class="card-body">
               <form id="formPrueba">
                 <div class="row g-2 mb-2">
                   <div class="col-md-6">
-                    <label for="idProyecto" class="form-label fw-semibold small"
-                      >Proyecto *</label
-                    >
-                    <select id="idProyecto" class="form-select" required>
-                      <option
-                        th:each="p : ${proyectos}"
-                        th:value="${p.idProyecto}"
-                        th:text="${p.codigo + ' - ' + p.cliente}"
-                      ></option>
-                    </select>
+                    <label class="form-label fw-semibold small">Proyecto *</label>
+                    <div class="buscador-campo input-group">
+                      <input type="hidden" id="idProyecto" />
+                      <input type="text" id="idProyectoTexto" class="form-control placeholder-muted" placeholder="Buscar proyecto..." readonly required />
+                      <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorProyectoForm()">
+                        <i class="bi bi-search"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary" onclick="limpiarBuscador('idProyecto')" title="Limpiar">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
                   </div>
                   <div class="col-md-6">
-                    <label
-                      for="idParametro"
-                      class="form-label fw-semibold small"
-                      >Tipo de Prueba *</label
-                    >
-                    <select
-                      id="idParametro"
-                      class="form-select"
-                      onchange="cambiarChecklist()"
-                      required
-                    >
-                      <option value="">-- Seleccione tipo --</option>
-                      <option
-                        th:each="par : ${parametros}"
-                        th:value="${par.idParametro}"
-                        th:data-tipo="${par.tipoPrueba}"
-                        th:text="${par.tipoPrueba}"
-                      ></option>
-                    </select>
+                    <label class="form-label fw-semibold small">Tipo de Prueba *</label>
+                    <div class="buscador-campo input-group">
+                      <input type="hidden" id="idParametro" />
+                      <input type="text" id="idParametroTexto" class="form-control placeholder-muted" placeholder="Buscar tipo de prueba..." readonly required />
+                      <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorParametro()">
+                        <i class="bi bi-search"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary" onclick="limpiarParametro()" title="Limpiar">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <div class="mb-3">
-                  <label
-                    for="codigoTablero"
-                    class="form-label fw-semibold small"
-                    >Código / Tag de Tablero *</label
-                  >
-                  <input
-                    type="text"
-                    id="codigoTablero"
-                    list="listaTableros"
-                    class="form-control"
-                    placeholder="Seleccione o escriba el código (ej. =B00+W00_A)"
-                    required
-                  />
-                  <datalist id="listaTableros">
-                    <option
-                      value="=B00+W00_A — TABLERO CONTROLADOR SISTEMA A"
-                    ></option>
-                    <option
-                      value="=B00+W00_B — TABLERO CONTROLADOR SISTEMA B"
-                    ></option>
-                    <option
-                      value="=B03+S1A_A — MK CORTE A DIAMETRO 3 SISTEMA A"
-                    ></option>
-                    <option
-                      value="=B03+S1A_B — MK CORTE A DIAMETRO 3 SISTEMA B"
-                    ></option>
-                    <option
-                      value="=B03+WR03_A — TABLERO C&P L-5040 SISTEMA A"
-                    ></option>
-                    <option
-                      value="=B03+WR03_B — TABLERO C&P L-5040 SISTEMA B"
-                    ></option>
-                    <option value="=B03+PDC — TABLERO PDC"></option>
-                    <option
-                      value="=NF03+NF1 — TABLERO TRANSFERENCIA SS.AA. Y DISTRIBUCION AC"
-                    ></option>
-                    <option
-                      value="=B03+Y01 — TABLERO TELECOMUNICACIONES"
-                    ></option>
-                  </datalist>
+                  <label class="form-label fw-semibold small">Código / Tag de Tablero *</label>
+                  <div class="buscador-campo input-group">
+                    <input type="text" id="codigoTablero" class="form-control" placeholder="Ej. =B00+W00_A" required />
+                    <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorTablero('codigoTablero')" title="Buscar tablero">
+                      <i class="bi bi-search"></i>
+                    </button>
+                  </div>
                 </div>
 
-                <div
-                  id="bloqueMetalmecanica"
-                  class="d-none border rounded p-3 mb-3 bg-white"
-                >
-                  <h6 class="fw-bold text-primary border-bottom pb-2 mb-2">
-                    Checklist Metalmecánico
-                  </h6>
+                <div id="bloqueMetalmecanica" class="d-none border rounded p-3 mb-3 bg-white">
+                  <h6 class="fw-bold text-primary border-bottom pb-2 mb-2"><i class="bi bi-tools"></i> Checklist Metalmecánico</h6>
                   <div id="listaMetalmecanica"></div>
                 </div>
-                <div
-                  id="bloqueElectrica"
-                  class="d-none border rounded p-3 mb-3 bg-white"
-                >
-                  <h6 class="fw-bold text-primary border-bottom pb-2 mb-2">
-                    Checklist Eléctrico
-                  </h6>
+                <div id="bloqueElectrica" class="d-none border rounded p-3 mb-3 bg-white">
+                  <h6 class="fw-bold text-primary border-bottom pb-2 mb-2"><i class="bi bi-lightning"></i> Checklist Eléctrico</h6>
                   <div id="listaElectrica" class="mb-3"></div>
 
                   <div class="mb-3 border-top pt-2">
-                    <span class="form-label fw-semibold small d-block"
-                      >Tipo de Cable *</span
-                    >
+                    <span class="form-label fw-semibold small d-block">Tipo de Cable *</span>
                     <div class="d-flex flex-wrap gap-3 mb-2">
-                      <div class="form-check">
-                        <input
-                          class="form-check-input"
-                          type="radio"
-                          name="calibreCable"
-                          value="2.5 mm"
-                          id="c25"
-                          checked
-                        />
-                        <label class="form-check-label" for="c25">2.5 mm</label>
-                      </div>
-                      <div class="form-check">
-                        <input
-                          class="form-check-input"
-                          type="radio"
-                          name="calibreCable"
-                          value="4 mm"
-                          id="c4"
-                        />
-                        <label class="form-check-label" for="c4">4 mm</label>
-                      </div>
-                      <div class="form-check">
-                        <input
-                          class="form-check-input"
-                          type="radio"
-                          name="calibreCable"
-                          value="6 mm"
-                          id="c6"
-                        />
-                        <label class="form-check-label" for="c6">6 mm</label>
-                      </div>
-                      <div class="form-check">
-                        <input
-                          class="form-check-input"
-                          type="radio"
-                          name="calibreCable"
-                          value="10 mm"
-                          id="c10"
-                        />
-                        <label class="form-check-label" for="c10">10 mm</label>
-                      </div>
+                      <div class="form-check"><input class="form-check-input" type="radio" name="calibreCable" value="2.5 mm" id="c25" checked /><label class="form-check-label" for="c25">2.5 mm</label></div>
+                      <div class="form-check"><input class="form-check-input" type="radio" name="calibreCable" value="4 mm" id="c4" /><label class="form-check-label" for="c4">4 mm</label></div>
+                      <div class="form-check"><input class="form-check-input" type="radio" name="calibreCable" value="6 mm" id="c6" /><label class="form-check-label" for="c6">6 mm</label></div>
+                      <div class="form-check"><input class="form-check-input" type="radio" name="calibreCable" value="10 mm" id="c10" /><label class="form-check-label" for="c10">10 mm</label></div>
                     </div>
-                    <input
-                      type="text"
-                      id="detalleCable"
-                      aria-label="Detalle de cable"
-                      class="form-control form-control-sm"
-                      placeholder="Especificación adicional del cable (ej. LSOH)"
-                    />
+                    <input type="text" id="detalleCable" aria-label="Detalle de cable" class="form-control form-control-sm" placeholder="Especificación adicional del cable (ej. LSOH)" />
                   </div>
 
                   <div>
-                    <label
-                      for="cableTierra"
-                      class="form-label fw-semibold small"
-                      >Tipo de Cable Tierra *</label
-                    >
-                    <input
-                      type="text"
-                      id="cableTierra"
-                      class="form-control form-control-sm"
-                      placeholder="Ej. Cable desnudo / Amarillo-Verde"
-                    />
+                    <label for="cableTierra" class="form-label fw-semibold small">Tipo de Cable Tierra *</label>
+                    <input type="text" id="cableTierra" class="form-control form-control-sm" placeholder="Ej. Cable desnudo / Amarillo-Verde" />
                   </div>
                 </div>
 
                 <div class="mb-3">
-                  <label for="observacion" class="form-label fw-semibold small"
-                    >Comentarios y Observaciones</label
-                  >
-                  <textarea
-                    id="observacion"
-                    class="form-control"
-                    rows="2"
-                    placeholder="Obligatorio si algún ítem del checklist está en NO..."
-                  ></textarea>
+                  <label for="observacion" class="form-label fw-semibold small">Comentarios y Observaciones</label>
+                  <textarea id="observacion" class="form-control" rows="2" placeholder="Obligatorio si algún ítem del checklist está en NO..."></textarea>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 fw-semibold">
-                  Guardar Inspección
+                  <i class="bi bi-save"></i> Guardar Inspección
                 </button>
               </form>
             </div>
           </div>
         </div>
 
-        <div class="col-lg-6">
-          <div class="card shadow-sm border-0">
-            <div
-              class="card-header bg-dark text-white d-flex justify-content-between align-items-center"
-            >
-              <span>Resultados por Proyecto</span>
-              <div class="d-flex gap-2">
-                <select
-                  id="filtroProyecto"
-                  aria-label="Filtrar proyecto"
-                  class="form-select form-select-sm"
-                  onchange="cargarPruebas()"
-                >
-                  <option
-                    th:each="p : ${proyectos}"
-                    th:value="${p.idProyecto}"
-                    th:text="${p.codigo}"
-                  ></option>
-                </select>
-                <button
-                  type="button"
-                  class="btn btn-danger btn-sm"
-                  onclick="descargarPdf()"
-                >
-                  Certificado PDF
+        <div class="col-lg-6" th:classappend="${rolActual != 'INSPECTOR'} ? 'offset-lg-3' : ''">
+          <div class="card card-spo">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span><i class="bi bi-table"></i> Resultados por Proyecto</span>
+              <div class="d-flex gap-2 flex-wrap">
+                <div class="buscador-campo input-group input-group-sm" style="min-width:220px;">
+                  <input type="hidden" id="filtroProyectoValor" />
+                  <input type="text" id="filtroProyectoTexto" class="form-control form-control-sm placeholder-muted" placeholder="Filtrar por proyecto..." readonly />
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="abrirBuscadorFiltroProyecto()" title="Buscar proyecto">
+                    <i class="bi bi-search"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="limpiarFiltroProyecto()" title="Todos">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-danger btn-sm" onclick="descargarPdf()">
+                  <i class="bi bi-file-earmark-pdf"></i> Certificado PDF
                 </button>
               </div>
             </div>
             <div class="card-body p-0">
-              <table class="table table-hover align-middle mb-0">
+              <table class="table table-hover align-middle mb-0" id="tablaPruebas">
                 <thead class="table-light">
                   <tr>
                     <th>Tipo</th>
@@ -248,180 +128,231 @@
                     <th th:if="${rolActual == 'INSPECTOR'}">Acción</th>
                   </tr>
                 </thead>
-                <tbody id="tablaPruebas"></tbody>
+                <tbody></tbody>
               </table>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
     <!-- Modal Editar / Levantar Observación -->
     <div class="modal fade" id="modalEditarPrueba" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
-          <div class="modal-header bg-dark text-white">
-            <h5 class="modal-title">Editar / Levantar Observación FAT</h5>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="modal"
-            ></button>
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar / Levantar Observación FAT</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <form id="formEditarPrueba">
             <div class="modal-body">
               <input type="hidden" id="editIdPrueba" />
               <div class="mb-3">
-                <label
-                  for="editCodigoTablero"
-                  class="form-label fw-semibold small"
-                  >Código / Tag de Tablero *</label
-                >
-                <input
-                  type="text"
-                  id="editCodigoTablero"
-                  list="listaTableros"
-                  class="form-control"
-                  placeholder="Seleccione o escriba el tablero"
-                  required
-                />
+                <label class="form-label fw-semibold small">Código / Tag de Tablero *</label>
+                <div class="buscador-campo input-group">
+                  <input type="text" id="editCodigoTablero" class="form-control" placeholder="Seleccione o escriba el tablero" required />
+                  <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorTablero('editCodigoTablero')" title="Buscar tablero">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
               </div>
               <div class="mb-3">
-                <label for="editResultado" class="form-label fw-semibold small"
-                  >Estado de Conformidad *</label
-                >
+                <label for="editResultado" class="form-label fw-semibold small">Estado de Conformidad *</label>
                 <select id="editResultado" class="form-select">
-                  <option value="1">
-                    CONFORME (100% SÍ / Observación levantada)
-                  </option>
-                  <option value="0">
-                    NO_CONFORME (Pendiente de levantar en taller)
-                  </option>
+                  <option value="1">CONFORME (100% SÍ / Observación levantada)</option>
+                  <option value="0">NO_CONFORME (Pendiente de levantar en taller)</option>
                 </select>
               </div>
               <div class="mb-2">
-                <label
-                  for="editObservacion"
-                  class="form-label fw-semibold small"
-                  >Detalle Checklist y Observaciones *</label
-                >
-                <textarea
-                  id="editObservacion"
-                  class="form-control"
-                  rows="4"
-                  required
-                ></textarea>
+                <label for="editObservacion" class="form-label fw-semibold small">Detalle Checklist y Observaciones *</label>
+                <textarea id="editObservacion" class="form-control" rows="4" required></textarea>
               </div>
             </div>
             <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal"
-              >
-                Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary">
-                Guardar Cambios
-              </button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar Cambios</button>
             </div>
           </form>
         </div>
       </div>
     </div>
-    <script
-      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
-    ></script>
-    <script>
-      const itemsMetalmecanica = [
-        "Soportes",
-        "Esquineros",
-        "Tapas laterales",
-        "Tapas ciegas",
-        "Pisos",
-        "Canaletas instaladas",
-        "Rieles instalados",
-        "Torque de pernos",
-        "Kit antisísmico",
-        "Colocación de bornes",
-        "Colocación de breaker",
+
+    <div th:replace="~{fragments/buscador-modal :: buscador}"></div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script th:inline="javascript">
+      const PROYECTOS = /*[[${proyectos.![{ 'idProyecto': idProyecto, 'codigo': codigo, 'cliente': cliente }]}]]*/ [];
+      const PARAMETROS = /*[[${parametros.![{ 'idParametro': idParametro, 'tipoPrueba': tipoPrueba, 'unidad': unidad, 'valorMinimo': valorMinimo, 'valorMaximo': valorMaximo, 'normaReferencia': normaReferencia }]}]]*/ [];
+    </script>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script th:inline="javascript">
+      const proyectosData = (PROYECTOS || []).map((p) => ({ idProyecto: p.idProyecto, codigo: p.codigo || "", cliente: p.cliente || "" }));
+      const parametrosData = (PARAMETROS || []).map((p) => ({ idParametro: p.idParametro, tipoPrueba: p.tipoPrueba || "", unidad: p.unidad || "", valorMinimo: p.valorMinimo, valorMaximo: p.valorMaximo, normaReferencia: p.normaReferencia || "" }));
+
+      const TABLEROS = [
+        { codigo: "=B00+W00_A", nombre: "TABLERO CONTROLADOR SISTEMA A" },
+        { codigo: "=B00+W00_B", nombre: "TABLERO CONTROLADOR SISTEMA B" },
+        { codigo: "=B03+S1A_A", nombre: "MK CORTE A DIAMETRO 3 SISTEMA A" },
+        { codigo: "=B03+S1A_B", nombre: "MK CORTE A DIAMETRO 3 SISTEMA B" },
+        { codigo: "=B03+WR03_A", nombre: "TABLERO C&P L-5040 SISTEMA A" },
+        { codigo: "=B03+WR03_B", nombre: "TABLERO C&P L-5040 SISTEMA B" },
+        { codigo: "=B03+PDC", nombre: "TABLERO PDC" },
+        { codigo: "=NF03+NF1", nombre: "TABLERO TRANSFERENCIA SS.AA. Y DISTRIBUCION AC" },
+        { codigo: "=B03+Y01", nombre: "TABLERO TELECOMUNICACIONES" },
       ];
 
-      const itemsElectrica = [
-        "Timbrado",
-        "Amarillado de circuito tensión CC",
-        "Amarillado de circuito de mandos",
-        "Amarillado de circuito de señales",
-        "Amarillado de circuito de alterna",
-      ];
+      const itemsMetalmecanica = ["Soportes","Esquineros","Tapas laterales","Tapas ciegas","Pisos","Canaletas instaladas","Rieles instalados","Torque de pernos","Kit antisísmico","Colocación de bornes","Colocación de breaker"];
+      const itemsElectrica = ["Timbrado","Amarillado de circuito tensión CC","Amarillado de circuito de mandos","Amarillado de circuito de señales","Amarillado de circuito de alterna"];
 
       let listaPruebasActual = [];
+      let tipoParametroSel = "";
+
+      function limpiarBuscador(base) {
+        document.getElementById(base).value = "";
+        const t = document.getElementById(base + "Texto");
+        if (t) t.value = "";
+      }
+      function limpiarParametro() {
+        document.getElementById("idParametro").value = "";
+        document.getElementById("idParametroTexto").value = "";
+        tipoParametroSel = "";
+        cambiarChecklist("");
+      }
+
+      function abrirBuscadorProyectoForm() {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar proyecto",
+          icono: "bi-kanban",
+          datos: proyectosData,
+          placeholder: "Buscar por código o cliente...",
+          buscarEn: ["codigo", "cliente"],
+          columnas: [
+            { titulo: "Código", campo: "codigo", clase: "fw-bold" },
+            { titulo: "Cliente / Obra", campo: "cliente" },
+          ],
+          vacio: "No se encontraron proyectos.",
+          alSeleccionar: (p) => {
+            document.getElementById("idProyecto").value = p.idProyecto;
+            document.getElementById("idProyectoTexto").value = p.codigo + " — " + p.cliente;
+          },
+        });
+      }
+
+      function abrirBuscadorParametro() {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar tipo de prueba",
+          icono: "bi-clipboard-check",
+          datos: parametrosData,
+          placeholder: "Buscar tipo de prueba...",
+          buscarEn: ["tipoPrueba", "normaReferencia"],
+          columnas: [
+            { titulo: "Tipo de Prueba", campo: "tipoPrueba", clase: "fw-bold" },
+            { titulo: "Rango", campo: "valorMinimo", render: (p) => `${p.valorMinimo} – ${p.valorMaximo} ${p.unidad || ""}` },
+            { titulo: "Norma", campo: "normaReferencia" },
+          ],
+          vacio: "No se encontraron parámetros.",
+          alSeleccionar: (p) => {
+            document.getElementById("idParametro").value = p.idParametro;
+            document.getElementById("idParametroTexto").value = p.tipoPrueba;
+            tipoParametroSel = p.tipoPrueba;
+            cambiarChecklist(p.tipoPrueba);
+          },
+        });
+      }
+
+      function abrirBuscadorTablero(inputId) {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar tablero",
+          icono: "bi-display",
+          datos: TABLEROS,
+          placeholder: "Buscar por código o nombre...",
+          buscarEn: ["codigo", "nombre"],
+          columnas: [
+            { titulo: "Código / Tag", campo: "codigo", clase: "fw-bold text-nowrap" },
+            { titulo: "Descripción", campo: "nombre" },
+          ],
+          vacio: "No se encontraron tableros.",
+          alSeleccionar: (t) => {
+            document.getElementById(inputId).value = t.codigo;
+          },
+        });
+      }
+
+      function abrirBuscadorFiltroProyecto() {
+        SPO.buscadorModal.abrir({
+          titulo: "Filtrar resultados por proyecto",
+          icono: "bi-kanban",
+          datos: proyectosData,
+          placeholder: "Buscar por código o cliente...",
+          buscarEn: ["codigo", "cliente"],
+          columnas: [
+            { titulo: "Código", campo: "codigo", clase: "fw-bold" },
+            { titulo: "Cliente / Obra", campo: "cliente" },
+          ],
+          vacio: "No se encontraron proyectos.",
+          alSeleccionar: (p) => {
+            document.getElementById("filtroProyectoValor").value = p.idProyecto;
+            document.getElementById("filtroProyectoTexto").value = p.codigo + " — " + p.cliente;
+            cargarPruebas();
+          },
+        });
+      }
+      function limpiarFiltroProyecto() {
+        document.getElementById("filtroProyectoValor").value = "";
+        document.getElementById("filtroProyectoTexto").value = "";
+        cargarPruebas();
+      }
 
       function renderizarChecklist(contenedorId, lista, prefijo) {
         const div = document.getElementById(contenedorId);
-        div.innerHTML = lista
-          .map(
-            (item, i) => `
-        <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+        div.innerHTML = lista.map((item, i) => `
+          <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
             <span class="small">${item}</span>
             <div class="btn-group btn-group-sm" role="group">
-                <input type="radio" class="btn-check" name="${prefijo}_${i}" id="${prefijo}_si_${i}" value="SI" checked>
-                <label class="btn btn-outline-success py-0 px-2" for="${prefijo}_si_${i}">SÍ</label>
-
-                <input type="radio" class="btn-check" name="${prefijo}_${i}" id="${prefijo}_no_${i}" value="NO">
-                <label class="btn btn-outline-danger py-0 px-2" for="${prefijo}_no_${i}">NO</label>
+              <input type="radio" class="btn-check" name="${prefijo}_${i}" id="${prefijo}_si_${i}" value="SI" checked>
+              <label class="btn btn-outline-success py-0 px-2" for="${prefijo}_si_${i}">SÍ</label>
+              <input type="radio" class="btn-check" name="${prefijo}_${i}" id="${prefijo}_no_${i}" value="NO">
+              <label class="btn btn-outline-danger py-0 px-2" for="${prefijo}_no_${i}">NO</label>
             </div>
-        </div>
-    `,
-          )
-          .join("");
+          </div>`).join("");
       }
-
       renderizarChecklist("listaMetalmecanica", itemsMetalmecanica, "mm");
       renderizarChecklist("listaElectrica", itemsElectrica, "el");
 
-      function cambiarChecklist() {
-        const sel = document.getElementById("idParametro");
-        const tipo =
-          sel.options[sel.selectedIndex]?.getAttribute("data-tipo") || "";
-        document
-          .getElementById("bloqueMetalmecanica")
-          .classList.toggle("d-none", tipo !== "METALMECANICA");
-        document
-          .getElementById("bloqueElectrica")
-          .classList.toggle("d-none", tipo !== "ELECTRICA");
+      function cambiarChecklist(tipo) {
+        document.getElementById("bloqueMetalmecanica").classList.toggle("d-none", tipo !== "METALMECANICA");
+        document.getElementById("bloqueElectrica").classList.toggle("d-none", tipo !== "ELECTRICA");
       }
 
       async function cargarPruebas() {
-        const idProyecto = document.getElementById("filtroProyecto").value;
-        if (!idProyecto) return;
-        const res = await fetch(
-          `/api/calidad/pruebas?idProyecto=${idProyecto}`,
-        );
+        const idProyecto = document.getElementById("filtroProyectoValor").value;
+        if (!idProyecto) {
+          document.getElementById("tablaPruebas").querySelector("tbody").innerHTML =
+            `<tr data-spo-ignore="true"><td colspan="4" class="text-center text-muted small py-4">Seleccione un proyecto para ver sus pruebas.</td></tr>`;
+          SPO.paginacion.refrescar("tablaPruebas");
+          return;
+        }
+        const res = await fetch(`/api/calidad/pruebas?idProyecto=${idProyecto}`);
         listaPruebasActual = await res.json();
-        const tbody = document.getElementById("tablaPruebas");
+        const tbody = document.querySelector("#tablaPruebas tbody");
         const esInspector = document.getElementById("formPrueba") !== null;
-
-        tbody.innerHTML = listaPruebasActual
-          .map(
-            (p, idx) => `
-        <tr>
+        tbody.innerHTML = listaPruebasActual.map((p, idx) => `
+          <tr>
             <td class="fw-bold small">${p.parametro.tipoPrueba}</td>
             <td><span class="badge ${p.resultado === "CONFORME" ? "bg-success" : "bg-danger"}">${p.resultado}</span></td>
             <td class="small text-muted">${p.observacion || "-"}</td>
-            ${esInspector ? `<td><button type="button" class="btn btn-outline-primary btn-sm" onclick="abrirModalEditar(${idx})">Editar</button></td>` : ""}
-        </tr>
-    `,
-          )
-          .join("");
+            ${esInspector ? `<td><button type="button" class="btn btn-outline-primary btn-sm" onclick="abrirModalEditar(${idx})"><i class="bi bi-pencil"></i></button></td>` : ""}
+          </tr>`).join("");
+        if (listaPruebasActual.length === 0) {
+          tbody.innerHTML = `<tr data-spo-ignore="true"><td colspan="4" class="text-center text-muted small py-4">Sin pruebas registradas para este proyecto.</td></tr>`;
+        }
+        SPO.paginacion.refrescar("tablaPruebas");
       }
 
       function abrirModalEditar(idx) {
         const p = listaPruebasActual[idx];
         document.getElementById("editIdPrueba").value = p.idPrueba;
-        document.getElementById("editResultado").value =
-          p.resultado === "CONFORME" ? "1" : "0";
-
+        document.getElementById("editResultado").value = p.resultado === "CONFORME" ? "1" : "0";
         const obs = p.observacion || "";
         const match = obs.match(/^\[Tablero:\s*([^\]]+)\]\s*(.*)$/);
         if (match) {
@@ -431,130 +362,92 @@
           document.getElementById("editCodigoTablero").value = "";
           document.getElementById("editObservacion").value = obs;
         }
-
-        new bootstrap.Modal(
-          document.getElementById("modalEditarPrueba"),
-        ).show();
+        new bootstrap.Modal(document.getElementById("modalEditarPrueba")).show();
       }
 
       function descargarPdf() {
-        const idProyecto = document.getElementById("filtroProyecto").value;
-        window.open(
-          `/api/calidad/proyectos/${idProyecto}/certificado.pdf`,
-          "_blank",
-        );
+        const idProyecto = document.getElementById("filtroProyectoValor").value;
+        if (!idProyecto) { SPO.toast("Seleccione un proyecto primero.", "warning"); return; }
+        window.open(`/api/calidad/proyectos/${idProyecto}/certificado.pdf`, "_blank");
       }
 
-      document
-        .getElementById("formPrueba")
-        ?.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const sel = document.getElementById("idParametro");
-          const tipo =
-            sel.options[sel.selectedIndex]?.getAttribute("data-tipo");
-          if (!tipo) {
-            alert("Seleccione un tipo de prueba");
-            return;
-          }
+      document.getElementById("formPrueba")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const tipo = tipoParametroSel;
+        if (!tipo) { SPO.toast("Seleccione un tipo de prueba.", "warning"); return; }
+        if (!document.getElementById("idProyecto").value) { SPO.toast("Seleccione un proyecto.", "warning"); return; }
 
-          const tablero = document.getElementById("codigoTablero").value.trim();
-          const lista =
-            tipo === "METALMECANICA" ? itemsMetalmecanica : itemsElectrica;
-          const prefijo = tipo === "METALMECANICA" ? "mm" : "el";
-          let fallos = [];
-
-          lista.forEach((item, i) => {
-            const val = document.querySelector(
-              `input[name="${prefijo}_${i}"]:checked`,
-            ).value;
-            if (val === "NO") fallos.push(item);
-          });
-
-          let resumen =
-            `[Tablero: ${tablero}] ` +
-            (fallos.length === 0
-              ? "Checklist 100% SÍ. "
-              : `Ítems en NO: ${fallos.join(", ")}. `);
-          if (tipo === "ELECTRICA") {
-            const calibre = document.querySelector(
-              'input[name="calibreCable"]:checked',
-            ).value;
-            const detCable = document
-              .getElementById("detalleCable")
-              .value.trim();
-            const tierra = document.getElementById("cableTierra").value.trim();
-            resumen += `Cable: ${calibre} ${detCable ? "(" + detCable + ")" : ""} | Tierra: ${tierra || "Estándar"}. `;
-          }
-
-          const obsUsuario = document
-            .getElementById("observacion")
-            .value.trim();
-          const observacionFinal =
-            resumen + (obsUsuario ? `Obs: ${obsUsuario}` : "");
-          const valorMedido = fallos.length === 0 ? 1 : 0;
-
-          if (fallos.length > 0 && !obsUsuario) {
-            alert(
-              "Debe escribir un comentario u observación porque marcó ítems en NO.",
-            );
-            return;
-          }
-
-          const data = {
-            idProyecto: document.getElementById("idProyecto").value,
-            idParametro: sel.value,
-            valorMedido: valorMedido,
-            observacion: observacionFinal,
-          };
-
-          const res = await fetch("/api/calidad/pruebas", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-          });
-          if (res.ok) {
-            const p = await res.json();
-            alert("Inspección guardada: " + p.resultado);
-            document.getElementById("observacion").value = "";
-            cargarPruebas();
-          } else {
-            alert((await res.json()).error);
-          }
+        const tablero = document.getElementById("codigoTablero").value.trim();
+        const lista = tipo === "METALMECANICA" ? itemsMetalmecanica : itemsElectrica;
+        const prefijo = tipo === "METALMECANICA" ? "mm" : "el";
+        let fallos = [];
+        lista.forEach((item, i) => {
+          const val = document.querySelector(`input[name="${prefijo}_${i}"]:checked`).value;
+          if (val === "NO") fallos.push(item);
         });
 
-      document
-        .getElementById("formEditarPrueba")
-        ?.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const id = document.getElementById("editIdPrueba").value;
-          const tablero = document
-            .getElementById("editCodigoTablero")
-            .value.trim();
-          const detalle = document
-            .getElementById("editObservacion")
-            .value.trim();
+        let resumen = `[Tablero: ${tablero}] ` + (fallos.length === 0 ? "Checklist 100% SÍ. " : `Ítems en NO: ${fallos.join(", ")}. `);
+        if (tipo === "ELECTRICA") {
+          const calibre = document.querySelector('input[name="calibreCable"]:checked').value;
+          const detCable = document.getElementById("detalleCable").value.trim();
+          const tierra = document.getElementById("cableTierra").value.trim();
+          resumen += `Cable: ${calibre} ${detCable ? "(" + detCable + ")" : ""} | Tierra: ${tierra || "Estándar"}. `;
+        }
+        const obsUsuario = document.getElementById("observacion").value.trim();
+        const observacionFinal = resumen + (obsUsuario ? `Obs: ${obsUsuario}` : "");
+        const valorMedido = fallos.length === 0 ? 1 : 0;
 
-          const data = {
-            valorMedido: Number.parseInt(
-              document.getElementById("editResultado").value,
-            ),
-            observacion: `[Tablero: ${tablero}] ${detalle}`,
-          };
-          const res = await fetch(`/api/calidad/pruebas/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-          });
-          if (res.ok) {
-            bootstrap.Modal.getInstance(
-              document.getElementById("modalEditarPrueba"),
-            ).hide();
-            cargarPruebas();
-          } else {
-            alert((await res.json()).error);
-          }
+        if (fallos.length > 0 && !obsUsuario) {
+          SPO.toast("Debe escribir una observación porque marcó ítems en NO.", "warning");
+          return;
+        }
+        const data = {
+          idProyecto: document.getElementById("idProyecto").value,
+          idParametro: document.getElementById("idParametro").value,
+          valorMedido,
+          observacion: observacionFinal,
+        };
+        const res = await fetch("/api/calidad/pruebas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
         });
+        if (res.ok) {
+          const p = await res.json();
+          SPO.toast("Inspección guardada: " + p.resultado, "success");
+          document.getElementById("observacion").value = "";
+          cargarPruebas();
+        } else {
+          const err = await res.json().catch(() => ({ error: "Error." }));
+          SPO.toast(err.error, "danger");
+        }
+      });
 
+      document.getElementById("formEditarPrueba")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("editIdPrueba").value;
+        const tablero = document.getElementById("editCodigoTablero").value.trim();
+        const detalle = document.getElementById("editObservacion").value.trim();
+        const data = {
+          valorMedido: parseInt(document.getElementById("editResultado").value, 10),
+          observacion: `[Tablero: ${tablero}] ${detalle}`,
+        };
+        const res = await fetch(`/api/calidad/pruebas/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          bootstrap.Modal.getInstance(document.getElementById("modalEditarPrueba")).hide();
+          SPO.toast("Observación actualizada.", "success");
+          cargarPruebas();
+        } else {
+          const err = await res.json().catch(() => ({ error: "Error." }));
+          SPO.toast(err.error, "danger");
+        }
+      });
+
+      SPO.paginacion.init("tablaPruebas", { porPagina: 100 });
       cargarPruebas();
     </script>
   </body>

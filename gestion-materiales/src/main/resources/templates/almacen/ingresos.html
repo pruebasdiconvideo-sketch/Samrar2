@@ -1,178 +1,208 @@
 <!doctype html>
 <html xmlns:th="http://thymeleaf.org" lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Ingreso de Materiales - Smart Power On</title>
-    <link
-      rel="stylesheet"
-      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
-    />
-  </head>
+  <head th:replace="fragments/head :: head('Ingreso de Materiales')"></head>
   <body class="bg-light">
     <div th:replace="~{fragments/navbar :: menu}"></div>
 
-    <div class="container pb-5">
+    <main class="app-main container pb-5">
+      <div class="page-header">
+        <div>
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-truck"></i></span>
+            Ingreso de Materiales (Orden de Compra)
+          </h4>
+          <p class="page-subtitle">Registro de recepción y actualización de stock por proyecto</p>
+        </div>
+      </div>
+
       <div class="row justify-content-center">
-        <div class="col-lg-7">
-          <div class="card shadow-sm border-0">
-            <div class="card-header bg-dark text-white fw-semibold">
-              Registro de Ingreso de Materiales (Orden de Compra)
-            </div>
+        <div class="col-lg-8">
+          <div class="card card-spo">
+            <div class="card-header"><i class="bi bi-box-arrow-in-down"></i> Registro de Ingreso</div>
             <div class="card-body">
               <form id="formIngreso">
                 <div class="row g-2 mb-3">
                   <div class="col-md-6">
-                    <label for="codigoOc" class="form-label fw-semibold small"
-                      >Orden de Compra (Seleccione o digite) *</label
-                    >
-                    <input
-                      type="text"
-                      id="codigoOc"
-                      list="listaOcs"
-                      class="form-control"
-                      placeholder="Ej. OC-PICO-2026-015"
-                      required
-                    />
-                    <datalist id="listaOcs">
-                      <option
-                        th:each="oc : ${ordenesCompra}"
-                        th:value="${oc.codigo}"
-                        th:label="${oc.codigo + ' - ' + oc.proveedor}"
-                      ></option>
-                    </datalist>
+                    <label class="form-label fw-semibold small">Orden de Compra *</label>
+                    <div class="buscador-campo input-group">
+                      <input type="text" id="codigoOc" class="form-control" placeholder="Ej. OC-PICO-2026-015" required />
+                      <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorOC()" title="Buscar OC existente">
+                        <i class="bi bi-search"></i>
+                      </button>
+                    </div>
+                    <div class="form-text">Seleccione una OC existente o digite un código nuevo; se creará al guardar.</div>
                   </div>
                   <div class="col-md-6">
-                    <label for="proveedor" class="form-label fw-semibold small"
-                      >Proveedor</label
-                    >
-                    <input
-                      type="text"
-                      id="proveedor"
-                      list="listaProveedores"
-                      class="form-control"
-                      placeholder="Ej. Siemens S.A.C. / Phoenix Contact"
-                    />
-                    <datalist id="listaProveedores">
-                      <option
-                        value="Siemens S.A.C. (Smart Infrastructure)"
-                      ></option>
-                      <option value="Phoenix Contact Perú S.A.C."></option>
-                      <option value="Schneider Electric Perú S.A."></option>
-                    </datalist>
+                    <label for="proveedor" class="form-label fw-semibold small">Proveedor</label>
+                    <input type="text" id="proveedor" class="form-control" placeholder="Ej. Siemens S.A.C. / Phoenix Contact" />
                   </div>
                 </div>
 
                 <div class="row g-2 mb-3">
                   <div class="col-md-6">
-                    <label
-                      for="proyectoDestino"
-                      class="form-label fw-semibold small"
-                      >Proyecto Destino *</label
-                    >
-                    <select id="proyectoDestino" class="form-select" required>
-                      <option
-                        th:each="p : ${proyectos}"
-                        th:value="${p.codigo}"
-                        th:text="${p.codigo + ' - ' + p.cliente}"
-                      ></option>
-                    </select>
+                    <label class="form-label fw-semibold small">Proyecto Destino *</label>
+                    <div class="buscador-campo input-group">
+                      <input type="hidden" id="proyectoDestino" />
+                      <input type="text" id="proyectoDestinoTexto" class="form-control placeholder-muted"
+                             placeholder="Buscar proyecto destino..." readonly required />
+                      <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorProyecto()">
+                        <i class="bi bi-search"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary" onclick="limpiarBuscador('proyectoDestino')" title="Limpiar">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
                   </div>
                   <div class="col-md-6">
-                    <label for="ubicacion" class="form-label fw-semibold small"
-                      >Ubicación en Almacén</label
-                    >
-                    <input
-                      type="text"
-                      id="ubicacion"
-                      class="form-control"
-                      placeholder="Ej. Pasillo 1 - Anaquel 4 - Piso 2"
-                    />
+                    <label for="ubicacion" class="form-label fw-semibold small">Ubicación en Almacén</label>
+                    <input type="text" id="ubicacion" class="form-control" placeholder="Ej. Pasillo 1 - Anaquel 4 - Piso 2" />
                   </div>
                 </div>
 
                 <div class="mb-3">
-                  <label for="idMaterial" class="form-label fw-semibold small"
-                    >Equipo / Material del Catálogo *</label
-                  >
-                  <select id="idMaterial" class="form-select" required>
-                    <option value="">-- Seleccione equipo o material --</option>
-                    <option
-                      th:each="m : ${materiales}"
-                      th:value="${m.idMaterial}"
-                      th:data-codigo="${m.codigo}"
-                      th:text="${m.codigo + ' - ' + m.nombre}"
-                    ></option>
-                  </select>
+                  <label class="form-label fw-semibold small">Equipo / Material del Catálogo *</label>
+                  <div class="buscador-campo input-group">
+                    <input type="hidden" id="idMaterial" />
+                    <input type="text" id="idMaterialTexto" class="form-control placeholder-muted"
+                           placeholder="Buscar equipo o material en el catálogo..." readonly required />
+                    <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorMaterial()">
+                      <i class="bi bi-search"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="limpiarBuscador('idMaterial')" title="Limpiar">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="mb-4">
-                  <label for="cantidad" class="form-label fw-semibold small"
-                    >Cantidad Recibida *</label
-                  >
-                  <input
-                    type="number"
-                    id="cantidad"
-                    min="1"
-                    class="form-control"
-                    required
-                  />
+                  <label for="cantidad" class="form-label fw-semibold small">Cantidad Recibida *</label>
+                  <input type="number" id="cantidad" min="1" class="form-control" required />
                 </div>
 
                 <button type="submit" class="btn btn-success w-100 fw-semibold">
-                  Registrar Ingreso y Actualizar Stock del Proyecto
+                  <i class="bi bi-check2-circle"></i> Registrar Ingreso y Actualizar Stock
                 </button>
               </form>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
-    <script
-      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
-    ></script>
-    <script>
-      // Evita mostrar códigos repetidos en el desplegable de equipos para que sea más limpio elegir
-      const vistos = new Set();
-      document
-        .querySelectorAll("#idMaterial option[data-codigo]")
-        .forEach((opt) => {
-          const cod = opt.getAttribute("data-codigo");
-          if (vistos.has(cod)) opt.remove();
-          else vistos.add(cod);
-        });
+    <div th:replace="~{fragments/buscador-modal :: buscador}"></div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
 
-      document
-        .getElementById("formIngreso")
-        ?.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const data = {
-            codigoOc: document.getElementById("codigoOc").value.trim(),
-            proveedor: document.getElementById("proveedor").value.trim(),
-            proyectoDestino: document.getElementById("proyectoDestino").value,
-            ubicacion: document.getElementById("ubicacion").value.trim(),
-            idMaterial: Number.parseInt(
-              document.getElementById("idMaterial").value,
-            ),
-            cantidad: Number.parseInt(
-              document.getElementById("cantidad").value,
-            ),
-          };
-          const res = await fetch("/api/almacen/ingresos", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-          });
-          if (res.ok) {
-            const m = await res.json();
-            alert(
-              `Ingreso registrado en ${m.proyectoAsignado}.\nNuevo stock de ${m.codigo}: ${m.stockActual} unidades.`,
-            );
-            document.getElementById("cantidad").value = "";
-          } else {
-            alert((await res.json()).error);
-          }
+    <script th:inline="javascript">
+      const PROYECTOS = /*[[${proyectos.![{ 'idProyecto': idProyecto, 'codigo': codigo, 'cliente': cliente, 'responsable': responsable }]}]]*/ [];
+      const ORDENES = /*[[${ordenesCompra.![{ 'codigo': codigo, 'proveedor': proveedor, 'estado': estado }]}]]*/ [];
+    </script>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script th:inline="javascript">
+      function limpiarBuscador(base) {
+        document.getElementById(base).value = "";
+        const t = document.getElementById(base + "Texto");
+        if (t) t.value = "";
+      }
+
+      const proyectosData = (PROYECTOS || []).map((p) => ({
+        codigo: p.codigo || "", cliente: p.cliente || "", responsable: p.responsable || "",
+      }));
+      const ordenesData = (ORDENES || []).map((o) => ({
+        codigo: o.codigo || "", proveedor: o.proveedor || "", estado: o.estado || "",
+      }));
+
+      function abrirBuscadorProyecto() {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar proyecto destino",
+          icono: "bi-kanban",
+          datos: proyectosData,
+          placeholder: "Buscar por código o cliente...",
+          buscarEn: ["codigo", "cliente", "responsable"],
+          columnas: [
+            { titulo: "Código", campo: "codigo", clase: "fw-bold" },
+            { titulo: "Cliente / Obra", campo: "cliente" },
+            { titulo: "Responsable", campo: "responsable" },
+          ],
+          vacio: "No se encontraron proyectos.",
+          alSeleccionar: (p) => {
+            document.getElementById("proyectoDestino").value = p.codigo;
+            document.getElementById("proyectoDestinoTexto").value = p.codigo + " — " + p.cliente;
+          },
         });
+      }
+
+      function abrirBuscadorOC() {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar Orden de Compra",
+          icono: "bi-receipt",
+          datos: ordenesData,
+          placeholder: "Buscar por código o proveedor...",
+          buscarEn: ["codigo", "proveedor"],
+          columnas: [
+            { titulo: "Código OC", campo: "codigo", clase: "fw-bold" },
+            { titulo: "Proveedor", campo: "proveedor" },
+            { titulo: "Estado", campo: "estado", render: (o) => `<span class="badge ${o.estado === 'ABIERTA' ? 'bg-success' : 'bg-secondary'}">${o.estado || '-'}</span>` },
+          ],
+          vacio: "No hay órdenes abiertas. Puede digitar un código nuevo.",
+          alSeleccionar: (o) => {
+            document.getElementById("codigoOc").value = o.codigo;
+            if (!document.getElementById("proveedor").value) {
+              document.getElementById("proveedor").value = o.proveedor;
+            }
+          },
+        });
+      }
+
+      function abrirBuscadorMaterial() {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar equipo / material",
+          icono: "bi-box-seam",
+          url: "/api/almacen/materiales",
+          placeholder: "Buscar por código, nombre o categoría...",
+          buscarEn: ["codigo", "nombre", "categoria", "proyectoAsignado"],
+          columnas: [
+            { titulo: "Código", campo: "codigo", clase: "fw-bold text-nowrap" },
+            { titulo: "Equipo / Material", campo: "nombre" },
+            { titulo: "Categoría", campo: "categoria", render: (m) => `<span class="badge bg-secondary">${m.categoria || '-'}</span>` },
+            { titulo: "Proyecto", campo: "proyectoAsignado", render: (m) => m.proyectoAsignado || "General" },
+            { titulo: "Stock", campo: "stockActual", clase: "text-center fw-bold" },
+          ],
+          vacio: "No se encontraron materiales en el catálogo.",
+          alSeleccionar: (m) => {
+            document.getElementById("idMaterial").value = m.idMaterial;
+            document.getElementById("idMaterialTexto").value = m.codigo + " — " + m.nombre;
+          },
+        });
+      }
+
+      document.getElementById("formIngreso")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = {
+          codigoOc: document.getElementById("codigoOc").value.trim(),
+          proveedor: document.getElementById("proveedor").value.trim(),
+          proyectoDestino: document.getElementById("proyectoDestino").value,
+          ubicacion: document.getElementById("ubicacion").value.trim(),
+          idMaterial: parseInt(document.getElementById("idMaterial").value, 10),
+          cantidad: parseInt(document.getElementById("cantidad").value, 10),
+        };
+        if (!data.codigoOc) { SPO.toast("Seleccione o digite una Orden de Compra.", "warning"); return; }
+        if (!data.proyectoDestino) { SPO.toast("Seleccione el proyecto destino.", "warning"); return; }
+        if (!data.idMaterial) { SPO.toast("Seleccione el material del catálogo.", "warning"); return; }
+
+        const res = await fetch("/api/almacen/ingresos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const m = await res.json();
+          SPO.toast(`Ingreso registrado en ${m.proyectoAsignado}. Stock de ${m.codigo}: ${m.stockActual} u.`, "success");
+          document.getElementById("cantidad").value = "";
+        } else {
+          const err = await res.json().catch(() => ({ error: "Error al registrar." }));
+          SPO.toast(err.error || "Error al registrar.", "danger");
+        }
+      });
     </script>
   </body>
 </html>
