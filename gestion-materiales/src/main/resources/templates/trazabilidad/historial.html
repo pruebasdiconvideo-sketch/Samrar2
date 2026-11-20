@@ -1,0 +1,56 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Trazabilidad de Materiales - Smart Power On</title>
+    <link
+      rel="stylesheet"
+      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
+    />
+  </head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <div class="container">
+      <h4 class="mb-3">Kardex y Trazabilidad Histórica por Material</h4>
+      <div class="card shadow-sm">
+        <table class="table table-striped align-middle mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Fecha y Hora</th>
+              <th>Material</th>
+              <th>Tipo Movimiento</th>
+              <th>Cantidad</th>
+              <th>Documento / Proyecto</th>
+              <th>Usuario Responsable</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="t : ${movimientos}">
+              <td
+                th:text="${#temporals.format(t.fechaMovimiento, 'dd/MM/yyyy HH:mm')}"
+              ></td>
+              <td
+                th:text="${t.material.codigo + ' - ' + t.material.nombre}"
+              ></td>
+              <td>
+                <span
+                  class="badge bg-dark"
+                  th:text="${t.tipoMovimiento}"
+                ></span>
+              </td>
+              <td class="fw-bold" th:text="${t.cantidad}"></td>
+              <td
+                th:text="${t.proyecto != null ? t.proyecto.codigo : (t.ordenCompra != null ? t.ordenCompra.codigo : '-')}"
+              ></td>
+              <td th:text="${t.usuario.nombreCompleto}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <script
+      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
+    ></script>
+  </body>
+</html>

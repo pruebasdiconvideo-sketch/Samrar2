@@ -1,0 +1,270 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Catálogo de Materiales - Smart Power On</title>
+    <link
+      rel="stylesheet"
+      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
+    />
+  </head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <div class="container-fluid px-4 pb-5">
+      <div
+        class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"
+      >
+        <div>
+          <h4 class="mb-0">Inventario y Catálogo por Proyecto</h4>
+          <small class="text-muted"
+            >Control de ubicación física en almacén y trazabilidad por
+            obra</small
+          >
+        </div>
+        <div class="d-flex gap-2">
+          <select
+            id="filtroProyecto"
+            aria-label="Filtrar por proyecto"
+            class="form-select"
+            style="width: 300px"
+            onchange="filtrarTabla()"
+          >
+            <option value="">Todos los proyectos</option>
+            <option
+              th:each="p : ${proyectos}"
+              th:value="${p.codigo}"
+              th:text="${p.codigo + ' - ' + p.cliente}"
+            ></option>
+          </select>
+          <button
+            th:if="${rolActual == 'ALMACENERO' or rolActual == 'ADMIN'}"
+            class="btn btn-primary text-nowrap"
+            data-bs-toggle="modal"
+            data-bs-target="#modalMaterial"
+          >
+            + Nuevo Material
+          </button>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="tablaCatalogo">
+            <thead class="table-dark">
+              <tr>
+                <th>Proyecto</th>
+                <th>Código</th>
+                <th>Equipo / Material</th>
+                <th>Especificación Técnica</th>
+                <th>Ubicación en Almacén</th>
+                <th>Fecha Ingreso</th>
+                <th>Stock</th>
+                <th>Mín.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                th:each="m : ${materiales}"
+                th:data-proyecto="${m.proyectoAsignado}"
+                th:classappend="${m.stockActual <= m.stockMinimo} ? 'table-warning' : ''"
+              >
+                <td>
+                  <span
+                    class="badge"
+                    th:classappend="${m.proyectoAsignado != null and m.proyectoAsignado.contains('S02')} ? 'bg-info text-dark' : 'bg-primary'"
+                    th:text="${m.proyectoAsignado ?: 'Stock General'}"
+                  ></span>
+                </td>
+                <td class="fw-bold text-nowrap" th:text="${m.codigo}"></td>
+                <td th:text="${m.nombre}"></td>
+                <td
+                  class="small text-muted"
+                  th:text="${m.especificacionTecnica}"
+                ></td>
+                <td
+                  class="small fw-semibold text-dark"
+                  th:text="${m.ubicacion ?: 'Sin asignar'}"
+                ></td>
+                <td
+                  class="small text-nowrap"
+                  th:text="${m.fechaIngreso != null ? #temporals.format(m.fechaIngreso, 'dd/MM/yyyy HH:mm') : '-'}"
+                ></td>
+                <td class="fw-bold" th:text="${m.stockActual}"></td>
+                <td th:text="${m.stockMinimo}"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- Modal Nuevo Material con Proyecto Dinámico y Ubicación -->
+    <div class="modal fade" id="modalMaterial" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title">Registrar Material / Equipo en Almacén</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <form id="formMaterial">
+            <div class="modal-body">
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label
+                    for="proyectoAsignado"
+                    class="form-label fw-semibold small"
+                    >Proyecto Destino *</label
+                  >
+                  <select id="proyectoAsignado" class="form-select" required>
+                    <option
+                      th:each="p : ${proyectos}"
+                      th:value="${p.codigo}"
+                      th:text="${p.codigo + ' - ' + p.cliente}"
+                    ></option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label for="ubicacion" class="form-label fw-semibold small"
+                    >Ubicación Física (Pasillo / Anaquel / Piso) *</label
+                  >
+                  <input
+                    type="text"
+                    id="ubicacion"
+                    class="form-control"
+                    placeholder="Ej. Pasillo 1 - Anaquel 2 - Piso 1"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                  <label for="codigo" class="form-label fw-semibold small"
+                    >Código / MLFB Único *</label
+                  >
+                  <input
+                    type="text"
+                    id="codigo"
+                    class="form-control"
+                    placeholder="Ej. P1C972307"
+                    required
+                  />
+                </div>
+                <div class="col-md-8">
+                  <label for="nombre" class="form-label fw-semibold small"
+                    >Nombre del Material o Equipo *</label
+                  >
+                  <input
+                    type="text"
+                    id="nombre"
+                    class="form-control"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="mb-2">
+                <label
+                  for="especificacionTecnica"
+                  class="form-label fw-semibold small"
+                  >Especificación Técnica *</label
+                >
+                <textarea
+                  id="especificacionTecnica"
+                  class="form-control"
+                  rows="2"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label for="categoria" class="form-label fw-semibold small"
+                    >Categoría</label
+                  >
+                  <select id="categoria" class="form-select">
+                    <option value="Tableros">Tableros</option>
+                    <option value="Siprotec 5">Siprotec 5</option>
+                    <option value="MCB">MCB / Interruptores</option>
+                    <option value="Bornera">Borneras</option>
+                    <option value="Telecomunicaciones">
+                      Telecomunicaciones
+                    </option>
+                    <option value="Accesorios">Accesorios</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label for="stockMinimo" class="form-label fw-semibold small"
+                    >Stock Mínimo *</label
+                  >
+                  <input
+                    type="number"
+                    min="0"
+                    id="stockMinimo"
+                    class="form-control"
+                    value="1"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Guardar en Inventario
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script
+      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
+    ></script>
+    <script>
+      function filtrarTabla() {
+        const filtro = document.getElementById("filtroProyecto").value;
+        document.querySelectorAll("#tablaCatalogo tbody tr").forEach((tr) => {
+          const proy = tr.getAttribute("data-proyecto") || "";
+          tr.style.display = !filtro || proy === filtro ? "" : "none";
+        });
+      }
+
+      document
+        .getElementById("formMaterial")
+        ?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const data = {
+            proyectoAsignado: document.getElementById("proyectoAsignado").value,
+            ubicacion: document.getElementById("ubicacion").value.trim(),
+            codigo: document.getElementById("codigo").value.trim(),
+            nombre: document.getElementById("nombre").value.trim(),
+            especificacionTecnica: document
+              .getElementById("especificacionTecnica")
+              .value.trim(),
+            categoria: document.getElementById("categoria").value,
+            stockMinimo: Number.parseInt(
+              document.getElementById("stockMinimo").value,
+            ),
+          };
+          const res = await fetch("/api/almacen/materiales", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          if (res.ok) location.reload();
+          else alert((await res.json()).error);
+        });
+    </script>
+  </body>
+</html>

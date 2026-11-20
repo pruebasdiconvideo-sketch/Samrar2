@@ -1,0 +1,323 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Solicitudes y OTI - Smart Power On</title>
+    <link
+      rel="stylesheet"
+      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
+    />
+  </head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <div class="container pb-5">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h4 class="mb-0">Solicitudes de Materiales y Generación de OTI</h4>
+          <small class="text-muted"
+            >Requerimientos múltiples de taller hacia Almacén por
+            proyecto</small
+          >
+        </div>
+        <button
+          th:if="${rolActual == 'JEFE_PRODUCCION'}"
+          class="btn btn-primary"
+          data-bs-toggle="modal"
+          data-bs-target="#modalSolicitud"
+        >
+          + Nueva Solicitud / OTI
+        </button>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>N° OTI / Sol.</th>
+                <th>Proyecto</th>
+                <th>Responsable</th>
+                <th>Ítems Solicitados en la OTI</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="s : ${solicitudes}">
+                <td
+                  class="fw-bold text-nowrap"
+                  th:text="'OTI-' + ${#numbers.formatInteger(s.idSolicitud, 4)}"
+                ></td>
+                <td
+                  th:text="${s.proyecto.codigo + ' - ' + s.proyecto.cliente}"
+                ></td>
+                <td
+                  class="small"
+                  th:text="${s.proyecto.responsable ?: '-'}"
+                ></td>
+                <td class="small">
+                  <ul class="mb-0 ps-3">
+                    <li
+                      th:each="d : ${s.detalles}"
+                      th:text="${d.material.codigo + ' — ' + d.material.nombre + ' (Cant: ' + d.cantidadSolicitada + ')'}"
+                    ></li>
+                  </ul>
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    th:classappend="${s.estado == 'LISTA_DESPACHO'} ? 'bg-primary' : (${s.estado == 'DESPACHADA'} ? 'bg-success' : 'bg-secondary')"
+                    th:text="${s.estado}"
+                  ></span>
+                </td>
+                <td
+                  class="small text-nowrap"
+                  th:text="${#temporals.format(s.fechaSolicitud, 'dd/MM/yyyy HH:mm')}"
+                ></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- Modal Nueva Solicitud Múltiple (Genera OTI) -->
+    <div class="modal fade" id="modalSolicitud" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title">
+              Crear Solicitud de Materiales (Orden de Trabajo Interna - OTI)
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <form id="formSolicitud">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="idProyecto" class="form-label fw-semibold small"
+                  >Proyecto Destino *</label
+                >
+                <select
+                  id="idProyecto"
+                  class="form-select"
+                  onchange="filtrarMaterialesPorProyecto()"
+                  required
+                >
+                  <option
+                    th:each="p : ${proyectos}"
+                    th:value="${p.idProyecto}"
+                    th:data-codigo="${p.codigo}"
+                    th:text="${p.codigo + ' - ' + p.cliente}"
+                  ></option>
+                </select>
+              </div>
+
+              <div class="border rounded p-3 bg-light mb-3">
+                <label for="idMaterial" class="form-label fw-semibold small"
+                  >Agregar Equipos / Insumos a la OTI</label
+                >
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-7">
+                    <select id="idMaterial" class="form-select">
+                      <option
+                        th:each="m : ${materiales}"
+                        th:value="${m.idMaterial}"
+                        th:data-codigo="${m.codigo}"
+                        th:data-nombre="${m.nombre}"
+                        th:data-proyecto="${m.proyectoAsignado}"
+                        th:data-stock="${m.stockActual}"
+                        th:text="${m.codigo + ' - ' + m.nombre + ' [' + (m.proyectoAsignado ?: 'General') + ' | Stock: ' + m.stockActual + ']'}"
+                      ></option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <input
+                      type="number"
+                      id="cantidad"
+                      aria-label="Cantidad"
+                      min="1"
+                      value="1"
+                      class="form-control"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary w-100 fw-semibold"
+                      onclick="agregarItem()"
+                    >
+                      + Agregar Ítem
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                  <thead class="table-secondary">
+                    <tr>
+                      <th>Código</th>
+                      <th>Equipo / Material</th>
+                      <th class="text-center">Cantidad</th>
+                      <th class="text-center">Quitar</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tablaCarritoOti">
+                    <tr>
+                      <td colspan="4" class="text-center text-muted small py-3">
+                        Aún no ha agregado materiales a esta OTI. Seleccione
+                        arriba y pulse "+ Agregar Ítem".
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary fw-semibold">
+                Generar OTI y Enviar a Almacén
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script
+      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
+    ></script>
+    <script>
+      let carritoOti = [];
+
+      function filtrarMaterialesPorProyecto() {
+        const selProy = document.getElementById("idProyecto");
+        const codProy =
+          selProy.options[selProy.selectedIndex]?.getAttribute("data-codigo") ||
+          "";
+        const selMat = document.getElementById("idMaterial");
+        let primeroVisible = null;
+
+        Array.from(selMat.options).forEach((opt) => {
+          const proyMat = opt.getAttribute("data-proyecto") || "";
+          const visible = !codProy || proyMat === codProy;
+          opt.hidden = !visible;
+          if (visible && !primeroVisible) primeroVisible = opt.value;
+        });
+        if (primeroVisible) selMat.value = primeroVisible;
+      }
+
+      function agregarItem() {
+        const selMat = document.getElementById("idMaterial");
+        const opt = selMat.options[selMat.selectedIndex];
+        if (!opt || opt.hidden) {
+          alert("Seleccione un material válido para este proyecto.");
+          return;
+        }
+        const idMaterial = Number.parseInt(opt.value);
+        const codigo = opt.getAttribute("data-codigo");
+        const nombre = opt.getAttribute("data-nombre");
+        const stock = Number.parseInt(opt.getAttribute("data-stock"));
+        const cantidad = Number.parseInt(
+          document.getElementById("cantidad").value,
+        );
+
+        if (!cantidad || cantidad <= 0) {
+          alert("La cantidad debe ser mayor a 0.");
+          return;
+        }
+        if (cantidad > stock) {
+          alert(
+            `Stock insuficiente en almacén para este proyecto (Disponible: ${stock}).`,
+          );
+          return;
+        }
+
+        const existente = carritoOti.find((x) => x.idMaterial === idMaterial);
+        if (existente) {
+          existente.cantidad += cantidad;
+        } else {
+          carritoOti.push({ idMaterial, codigo, nombre, cantidad });
+        }
+        document.getElementById("cantidad").value = 1;
+        renderizarCarrito();
+      }
+
+      function quitarItem(idx) {
+        carritoOti.splice(idx, 1);
+        renderizarCarrito();
+      }
+
+      function renderizarCarrito() {
+        const tbody = document.getElementById("tablaCarritoOti");
+        if (carritoOti.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted small py-3">Aún no ha agregado materiales a esta OTI.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = carritoOti
+          .map(
+            (item, idx) => `
+        <tr>
+            <td class="fw-bold small">${item.codigo}</td>
+            <td class="small">${item.nombre}</td>
+            <td class="text-center fw-bold">${item.cantidad}</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-outline-danger btn-sm py-0" onclick="quitarItem(${idx})">X</button>
+            </td>
+        </tr>
+    `,
+          )
+          .join("");
+      }
+
+      document
+        .getElementById("formSolicitud")
+        ?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (carritoOti.length === 0) {
+            alert(
+              "Debe agregar al menos un material a la OTI antes de enviarla.",
+            );
+            return;
+          }
+
+          const data = {
+            idProyecto: Number.parseInt(
+              document.getElementById("idProyecto").value,
+            ),
+            idsMateriales: carritoOti.map((x) => x.idMaterial),
+            cantidades: carritoOti.map((x) => x.cantidad),
+          };
+
+          const res = await fetch("/api/produccion/solicitudes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          if (res.ok) {
+            const sol = await res.json();
+            const numOti = String(sol.idSolicitud).padStart(4, "0");
+            alert(
+              `OTI-${numOti} generada correctamente y enviada a cola de Almacén.`,
+            );
+            location.reload();
+          } else {
+            const err = await res.json();
+            alert(err.error || "Error al registrar la solicitud.");
+          }
+        });
+
+      filtrarMaterialesPorProyecto();
+    </script>
+  </body>
+</html>

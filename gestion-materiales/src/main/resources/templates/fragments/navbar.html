@@ -1,0 +1,109 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org">
+  <body>
+    <nav
+      th:fragment="menu"
+      class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm"
+    >
+      <div class="container-fluid">
+        <a class="navbar-brand fw-bold" th:href="@{/inicio}"
+          >⚡ Smart Power On</a
+        >
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navPrincipal"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navPrincipal">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link" th:href="@{/inicio}">Inicio</a>
+            </li>
+            <li
+              class="nav-item"
+              th:if="${rolActual == 'ADMIN' or rolActual == 'ALMACENERO' or rolActual == 'JEFE_PRODUCCION'}"
+            >
+              <a class="nav-link" th:href="@{/almacen/catalogo}">Catálogo</a>
+            </li>
+            <li class="nav-item" th:if="${rolActual == 'ALMACENERO'}">
+              <a class="nav-link" th:href="@{/almacen/ingresos}">Ingresos OC</a>
+            </li>
+            <li
+              class="nav-item"
+              th:if="${rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}"
+            >
+              <a class="nav-link" th:href="@{/produccion/proyectos}"
+                >Proyectos</a
+              >
+            </li>
+            <li
+              class="nav-item"
+              th:if="${rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}"
+            >
+              <a class="nav-link" th:href="@{/produccion/solicitudes}"
+                >Solicitudes</a
+              >
+            </li>
+            <li class="nav-item" th:if="${rolActual == 'ADMIN'}">
+              <a class="nav-link" th:href="@{/produccion/aprobaciones}"
+                >Aprobaciones</a
+              >
+            </li>
+            <li class="nav-item" th:if="${rolActual == 'ALMACENERO'}">
+              <a class="nav-link" th:href="@{/despacho/cola}">Despachos</a>
+            </li>
+            <li class="nav-item" th:if="${rolActual == 'OPERARIO_ENSAMBLE'}">
+              <a class="nav-link" th:href="@{/despacho/confirmar}"
+                >Confirmar Entrega</a
+              >
+            </li>
+            <li
+              class="nav-item"
+              th:if="${rolActual == 'INSPECTOR' or rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}"
+            >
+              <a class="nav-link" th:href="@{/calidad/pruebas}">Calidad FAT</a>
+            </li>
+            <li
+              class="nav-item"
+              th:if="${rolActual == 'OPERARIO_ENSAMBLE' or rolActual == 'ALMACENERO' or rolActual == 'JEFE_PRODUCCION'}"
+            >
+              <a class="nav-link" th:href="@{/merma/gestion}"
+                >Mermas/Devoluciones</a
+              >
+            </li>
+            <li
+              class="nav-item"
+              th:if="${rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}"
+            >
+              <a class="nav-link" th:href="@{/trazabilidad}">Trazabilidad</a>
+            </li>
+            <li class="nav-item" th:if="${rolActual == 'ADMIN'}">
+              <a class="nav-link" th:href="@{/admin/usuarios}"
+                >Administración</a
+              >
+            </li>
+          </ul>
+          <div
+            class="d-flex align-items-center text-white gap-3"
+            th:if="${usuarioActual != null}"
+          >
+            <span class="small">
+              <strong th:text="${usuarioActual.nombreCompleto}">Usuario</strong>
+              <span class="badge bg-primary ms-1" th:text="${rolActual}"
+                >ROL</span
+              >
+            </span>
+            <form th:action="@{/logout}" method="post" class="m-0">
+              <button type="submit" class="btn btn-outline-light btn-sm">
+                Cerrar Sesión
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </body>
+</html>

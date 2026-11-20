@@ -1,0 +1,79 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Inicio - Smart Power On</title>
+    <link
+      rel="stylesheet"
+      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
+    />
+  </head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <div class="container pb-5">
+      <div class="mb-4">
+        <h3>
+          Bienvenido,
+          <span
+            th:text="${usuarioActual != null ? usuarioActual.nombreCompleto : 'Usuario'}"
+            >Usuario</span
+          >
+        </h3>
+        <p class="text-muted">
+          Panel de control operativo — Planta Comas, Lima
+        </p>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <div class="card border-warning shadow-sm">
+            <div class="card-body">
+              <h6 class="text-muted">Materiales en Stock Mínimo</h6>
+              <h2 class="text-warning fw-bold" th:text="${alertasStock}">0</h2>
+              <a
+                th:if="${rolActual == 'ADMIN' or rolActual == 'ALMACENERO' or rolActual == 'JEFE_PRODUCCION'}"
+                th:href="@{/almacen/catalogo}"
+                class="small text-decoration-none"
+                >Ver inventario →</a
+              >
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-danger shadow-sm">
+            <div class="card-body">
+              <h6 class="text-muted">Solicitudes Retenidas</h6>
+              <h2 class="text-danger fw-bold" th:text="${solicitudesRetenidas}">
+                0
+              </h2>
+              <a
+                th:if="${rolActual == 'ADMIN'}"
+                th:href="@{/produccion/aprobaciones}"
+                class="small text-decoration-none"
+                >Revisar aprobaciones →</a
+              >
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-primary shadow-sm">
+            <div class="card-body">
+              <h6 class="text-muted">Solicitudes Listas para Despacho</h6>
+              <h2 class="text-primary fw-bold" th:text="${colaDespacho}">0</h2>
+              <a
+                th:if="${rolActual == 'ALMACENERO'}"
+                th:href="@{/despacho/cola}"
+                class="small text-decoration-none"
+                >Ir a despachos →</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script
+      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
+    ></script>
+  </body>
+</html>

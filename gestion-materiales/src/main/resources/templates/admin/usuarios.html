@@ -1,0 +1,179 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Administración - Smart Power On</title>
+    <link
+      rel="stylesheet"
+      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
+    />
+  </head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Gestión de Usuarios y Roles (V15)</h4>
+        <button
+          class="btn btn-primary"
+          data-bs-toggle="modal"
+          data-bs-target="#modalUsuario"
+        >
+          + Nuevo Usuario
+        </button>
+      </div>
+
+      <div class="card shadow-sm mb-4">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Nombre Completo</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="u : ${usuarios}">
+              <td th:text="${u.nombreCompleto}"></td>
+              <td th:text="${u.correo}"></td>
+              <td>
+                <span class="badge bg-primary" th:text="${u.rol.nombre}"></span>
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  th:classappend="${u.activo} ? 'bg-success' : 'bg-danger'"
+                  th:text="${u.activo ? 'ACTIVO' : 'INACTIVO'}"
+                ></span>
+              </td>
+              <td>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  th:onclick="'toggleEstado(' + ${u.idUsuario} + ', ' + ${!u.activo} + ')'"
+                >
+                  <span th:text="${u.activo ? 'Desactivar' : 'Activar'}"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="mb-3">Parámetros Normativos de Pruebas Eléctricas (V16)</h4>
+      <div class="card shadow-sm">
+        <table class="table table-bordered align-middle mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Tipo de Prueba</th>
+              <th>Unidad</th>
+              <th>Mínimo</th>
+              <th>Máximo</th>
+              <th>Norma Técnica</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="p : ${parametros}">
+              <td class="fw-bold" th:text="${p.tipoPrueba}"></td>
+              <td th:text="${p.unidad}"></td>
+              <td th:text="${p.valorMinimo}"></td>
+              <td th:text="${p.valorMaximo}"></td>
+              <td th:text="${p.normaReferencia}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal Nuevo Usuario -->
+    <div class="modal fade" id="modalUsuario" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title">Crear Usuario</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <form id="formUsuario">
+            <div class="modal-body">
+              <div class="mb-2">
+                <label class="form-label">Nombre Completo *</label>
+                <input
+                  type="text"
+                  id="nombreCompleto"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Correo *</label>
+                <input type="email" id="correo" class="form-control" required />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Contraseña *</label>
+                <input
+                  type="password"
+                  id="password"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Rol *</label>
+                <select id="idRol" class="form-select">
+                  <option
+                    th:each="r : ${roles}"
+                    th:value="${r.idRol}"
+                    th:text="${r.nombre}"
+                  ></option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">
+                Guardar Usuario
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script
+      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
+    ></script>
+    <script>
+      document
+        .getElementById("formUsuario")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const data = {
+            nombreCompleto: document.getElementById("nombreCompleto").value,
+            correo: document.getElementById("correo").value,
+            password: document.getElementById("password").value,
+            idRol: document.getElementById("idRol").value,
+          };
+          const res = await fetch("/api/admin/usuarios", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          if (res.ok) location.reload();
+          else alert((await res.json()).error);
+        });
+
+      async function toggleEstado(id, activo) {
+        const res = await fetch(`/api/admin/usuarios/${id}/estado`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activo }),
+        });
+        if (res.ok) location.reload();
+      }
+    </script>
+  </body>
+</html>

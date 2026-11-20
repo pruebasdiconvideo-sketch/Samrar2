@@ -1,0 +1,78 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Aprobaciones de Presupuesto - Smart Power On</title>
+    <link
+      rel="stylesheet"
+      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
+    />
+  </head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <div class="container">
+      <h4 class="mb-3">Solicitudes Retenidas por Exceso de Presupuesto</h4>
+      <div class="card shadow-sm">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Proyecto</th>
+              <th>Presupuesto</th>
+              <th>Costo Solicitud</th>
+              <th>Solicitante</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="s : ${retenidas}">
+              <td th:text="'#' + ${s.idSolicitud}"></td>
+              <td
+                th:text="${s.proyecto.codigo + ' - ' + s.proyecto.cliente}"
+              ></td>
+              <td th:text="'S/ ' + ${s.proyecto.presupuesto}"></td>
+              <td
+                class="fw-bold text-danger"
+                th:text="'S/ ' + ${s.costoTotal}"
+              ></td>
+              <td th:text="${s.usuarioSolicitante.nombreCompleto}"></td>
+              <td>
+                <button
+                  class="btn btn-success btn-sm"
+                  th:onclick="'procesar(' + ${s.idSolicitud} + ', \'aprobar\')'"
+                >
+                  Aprobar
+                </button>
+                <button
+                  class="btn btn-danger btn-sm"
+                  th:onclick="'procesar(' + ${s.idSolicitud} + ', \'rechazar\')'"
+                >
+                  Rechazar
+                </button>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(retenidas)}">
+              <td colspan="6" class="text-center text-muted py-3">
+                No hay solicitudes retenidas pendientes.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script
+      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
+    ></script>
+    <script>
+      async function procesar(id, accion) {
+        const res = await fetch(`/api/produccion/solicitudes/${id}/${accion}`, {
+          method: "POST",
+        });
+        if (res.ok) location.reload();
+        else alert((await res.json()).error);
+      }
+    </script>
+  </body>
+</html>

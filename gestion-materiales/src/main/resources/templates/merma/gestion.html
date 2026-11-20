@@ -1,0 +1,187 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mermas y Devoluciones - Smart Power On</title>
+    <link
+      rel="stylesheet"
+      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
+    />
+  </head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Gestión de Devoluciones y Mermas</h4>
+        <button
+          th:if="${rolActual == 'OPERARIO_ENSAMBLE'}"
+          class="btn btn-primary"
+          data-bs-toggle="modal"
+          data-bs-target="#modalMerma"
+        >
+          + Registrar Devolución / Merma
+        </button>
+      </div>
+
+      <div class="card shadow-sm">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Proyecto</th>
+              <th>Material</th>
+              <th>Tipo</th>
+              <th>Cant.</th>
+              <th>Motivo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${registros}">
+              <td th:text="'#' + ${r.idMerma}"></td>
+              <td th:text="${r.proyecto.codigo}"></td>
+              <td
+                th:text="${r.material.codigo + ' - ' + r.material.nombre}"
+              ></td>
+              <td th:text="${r.tipo}"></td>
+              <td th:text="${r.cantidad}"></td>
+              <td class="small" th:text="${r.motivo}"></td>
+              <td>
+                <span class="badge bg-secondary" th:text="${r.estado}"></span>
+              </td>
+              <td>
+                <div th:if="${r.estado == 'PENDIENTE'}">
+                  <button
+                    th:if="${rolActual == 'ALMACENERO' and r.tipo == 'DEVOLUCION'}"
+                    class="btn btn-success btn-sm"
+                    th:onclick="'accionMerma(' + ${r.idMerma} + ', \'reintegrar\')'"
+                  >
+                    Reintegrar
+                  </button>
+                  <button
+                    th:if="${rolActual == 'ALMACENERO' and r.tipo == 'DEVOLUCION'}"
+                    class="btn btn-warning btn-sm"
+                    th:onclick="'accionMerma(' + ${r.idMerma} + ', \'marcar-merma\')'"
+                  >
+                    Marcar Merma
+                  </button>
+                  <button
+                    th:if="${rolActual == 'JEFE_PRODUCCION' and r.tipo == 'MERMA'}"
+                    class="btn btn-danger btn-sm"
+                    th:onclick="'accionMerma(' + ${r.idMerma} + ', \'validar\')'"
+                  >
+                    Validar Merma
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal Registro Operario -->
+    <div class="modal fade" id="modalMerma" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title">Registrar Devolución o Merma</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <form id="formMerma">
+            <div class="modal-body">
+              <div class="mb-2">
+                <label class="form-label">Tipo *</label>
+                <select id="tipo" class="form-select">
+                  <option value="DEVOLUCION">DEVOLUCION (Sobrante útil)</option>
+                  <option value="MERMA">
+                    MERMA (Material dañado/descarte)
+                  </option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Proyecto *</label>
+                <select id="idProyecto" class="form-select">
+                  <option
+                    th:each="p : ${proyectos}"
+                    th:value="${p.idProyecto}"
+                    th:text="${p.codigo + ' - ' + p.cliente}"
+                  ></option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Material *</label>
+                <select id="idMaterial" class="form-select">
+                  <option
+                    th:each="m : ${materiales}"
+                    th:value="${m.idMaterial}"
+                    th:text="${m.codigo + ' - ' + m.nombre}"
+                  ></option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Cantidad *</label>
+                <input
+                  type="number"
+                  id="cantidad"
+                  min="1"
+                  value="1"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="mb-2">
+                <label class="form-label"
+                  >Motivo (obligatorio si es MERMA)</label
+                >
+                <textarea id="motivo" class="form-control" rows="2"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">Registrar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script
+      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
+    ></script>
+    <script>
+      document
+        .getElementById("formMerma")
+        ?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const data = {
+            tipo: document.getElementById("tipo").value,
+            idProyecto: document.getElementById("idProyecto").value,
+            idMaterial: document.getElementById("idMaterial").value,
+            cantidad: document.getElementById("cantidad").value,
+            motivo: document.getElementById("motivo").value,
+          };
+          const res = await fetch("/api/merma/devoluciones", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          if (res.ok) location.reload();
+          else alert((await res.json()).error);
+        });
+
+      async function accionMerma(id, endpoint) {
+        const res = await fetch(`/api/merma/devoluciones/${id}/${endpoint}`, {
+          method: "POST",
+        });
+        if (res.ok) location.reload();
+        else alert((await res.json()).error);
+      }
+    </script>
+  </body>
+</html>

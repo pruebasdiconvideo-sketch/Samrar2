@@ -1,0 +1,186 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Proyectos - Smart Power On</title>
+    <link
+      rel="stylesheet"
+      th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"
+    />
+  </head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <div class="container pb-5">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Proyectos de Ensamble de Celdas</h4>
+        <button
+          th:if="${rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}"
+          class="btn btn-primary"
+          data-bs-toggle="modal"
+          data-bs-target="#modalProyecto"
+        >
+          + Nuevo Proyecto
+        </button>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>Código</th>
+                <th>Cliente / Obra</th>
+                <th>Fecha Inicio</th>
+                <th>Entrega Estimada</th>
+                <th>Responsable Delegado</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="p : ${proyectos}">
+                <td class="fw-bold text-nowrap" th:text="${p.codigo}"></td>
+                <td th:text="${p.cliente}"></td>
+                <td th:text="${p.fechaInicio}"></td>
+                <td th:text="${p.fechaEntregaEstimada ?: '-'}"></td>
+                <td>
+                  <span
+                    class="badge bg-secondary"
+                    th:text="${p.responsable ?: 'Sin asignar'}"
+                  ></span>
+                </td>
+                <td>
+                  <span
+                    class="badge bg-info text-dark"
+                    th:text="${p.estado}"
+                  ></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Nuevo Proyecto con Delegación de Responsable -->
+    <div class="modal fade" id="modalProyecto" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title">Registrar y Asignar Proyecto</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <form id="formProyecto">
+            <div class="modal-body">
+              <div class="mb-2">
+                <label for="codigo" class="form-label fw-semibold small"
+                  >Código de Proyecto *</label
+                >
+                <input
+                  type="text"
+                  id="codigo"
+                  class="form-control"
+                  placeholder="Ej. PE-SAYA-S03-K8810"
+                  required
+                />
+              </div>
+              <div class="mb-2">
+                <label for="cliente" class="form-label fw-semibold small"
+                  >Cliente / Subestación *</label
+                >
+                <input type="text" id="cliente" class="form-control" required />
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label for="fechaInicio" class="form-label fw-semibold small"
+                    >Fecha de Inicio *</label
+                  >
+                  <input
+                    type="date"
+                    id="fechaInicio"
+                    class="form-control"
+                    required
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label
+                    for="fechaEntregaEstimada"
+                    class="form-label fw-semibold small"
+                    >Entrega Estimada *</label
+                  >
+                  <input
+                    type="date"
+                    id="fechaEntregaEstimada"
+                    class="form-control"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="mb-2">
+                <label for="responsable" class="form-label fw-semibold small"
+                  >Delegar a (Supervisor / Técnico) *</label
+                >
+                <input
+                  type="text"
+                  id="responsable"
+                  list="listaResponsables"
+                  class="form-control"
+                  placeholder="Seleccione o escriba el responsable"
+                  required
+                />
+                <datalist id="listaResponsables">
+                  <option value="Carlos Mendoza (Jefe Producción)"></option>
+                  <option value="Juan Pérez (Técnico Ensamble)"></option>
+                  <option value="Supervisor de Operaciones - SPO"></option>
+                </datalist>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Guardar Proyecto
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script
+      th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"
+    ></script>
+    <script>
+      document
+        .getElementById("formProyecto")
+        ?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const data = {
+            codigo: document.getElementById("codigo").value.trim(),
+            cliente: document.getElementById("cliente").value.trim(),
+            fechaInicio: document.getElementById("fechaInicio").value,
+            fechaEntregaEstimada: document.getElementById(
+              "fechaEntregaEstimada",
+            ).value,
+            responsable: document.getElementById("responsable").value.trim(),
+          };
+          const res = await fetch("/api/produccion/proyectos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          if (res.ok) location.reload();
+          else alert((await res.json()).error);
+        });
+    </script>
+  </body>
+</html>
