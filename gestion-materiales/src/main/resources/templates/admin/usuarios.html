@@ -1,0 +1,570 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head th:replace="fragments/head :: head('Administración de Usuarios')"></head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <main class="app-main container pb-5">
+      <div class="page-header">
+        <div>
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-gear"></i></span>
+            Gestión de Usuarios y Roles
+          </h4>
+          <p class="page-subtitle">Administración de cuentas de acceso y permisos por rol</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+          <i class="bi bi-person-plus"></i> Nuevo Usuario
+        </button>
+      </div>
+
+      <div class="card card-spo mb-4">
+        <div class="tabla-toolbar">
+          <div class="tabla-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="busquedaUsuarios" class="form-control" placeholder="Buscar por nombre, correo o rol..." />
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="tablaUsuarios">
+            <thead class="table-dark">
+              <tr>
+                <th>Nombre Completo</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th class="text-center text-nowrap">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(usuarios)}" data-spo-ignore="true">
+                <td colspan="5" class="text-center text-muted py-4">No hay usuarios registrados.</td>
+              </tr>
+              <tr th:each="u : ${usuarios}" th:data-id="${u.idUsuario}">
+                <td th:text="${u.nombreCompleto}"></td>
+                <td th:text="${u.correo}"></td>
+                <td><span class="badge bg-primary" th:text="${u.rol.nombre}"></span></td>
+                <td><span class="badge" th:classappend="${u.activo} ? 'bg-success' : 'bg-danger'" th:text="${u.activo ? 'ACTIVO' : 'INACTIVO'}"></span></td>
+                <td class="text-center text-nowrap">
+                  <div class="btn-group btn-group-sm acciones-grupo">
+                    <button type="button" class="btn btn-outline-info" th:onclick="'abrirDetalleUsuario(' + ${u.idUsuario} + ')'" title="Ver detalle">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" th:onclick="'abrirEditarUsuario(' + ${u.idUsuario} + ')'" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" th:onclick="'abrirEliminarUsuario(' + ${u.idUsuario} + ')'" title="Eliminar">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" th:onclick="'toggleEstado(' + ${u.idUsuario} + ', ' + ${!u.activo} + ')'" th:title="${u.activo ? 'Desactivar' : 'Activar'}">
+                      <i class="bi" th:classappend="${u.activo ? 'bi-toggle-on' : 'bi-toggle-off'}"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="page-header">
+        <h5 class="page-title">
+          <span class="title-icon"><i class="bi bi-rulers"></i></span>
+          Parámetros Normativos de Pruebas Eléctricas
+        </h5>
+      </div>
+      <div class="card card-spo">
+        <div class="tabla-toolbar">
+          <button type="button" class="btn btn-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#modalParametro">
+            <i class="bi bi-plus-lg"></i> Nuevo Parámetro
+          </button>
+          <div class="tabla-search ms-auto">
+            <i class="bi bi-search"></i>
+            <input type="text" id="busquedaParametros" class="form-control" placeholder="Buscar por tipo de prueba o norma..." />
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle mb-0" id="tablaParametros">
+            <thead class="table-dark">
+              <tr>
+                <th>Tipo de Prueba</th>
+                <th>Unidad</th>
+                <th>Mínimo</th>
+                <th>Máximo</th>
+                <th>Norma Técnica</th>
+                <th class="text-center text-nowrap">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(parametros)}" data-spo-ignore="true">
+                <td colspan="6" class="text-center text-muted py-4">No hay parámetros configurados.</td>
+              </tr>
+              <tr th:each="p : ${parametros}" th:data-id="${p.idParametro}">
+                <td class="fw-bold" th:text="${p.tipoPrueba}"></td>
+                <td th:text="${p.unidad}"></td>
+                <td th:text="${p.valorMinimo}"></td>
+                <td th:text="${p.valorMaximo}"></td>
+                <td th:text="${p.normaReferencia}"></td>
+                <td class="text-center text-nowrap">
+                  <div class="btn-group btn-group-sm acciones-grupo">
+                    <button type="button" class="btn btn-outline-info" th:onclick="'abrirDetalleParametro(' + ${p.idParametro} + ')'" title="Ver detalle"><i class="bi bi-eye"></i></button>
+                    <button type="button" class="btn btn-outline-warning" th:onclick="'abrirEditarParametro(' + ${p.idParametro} + ')'" title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-outline-danger" th:onclick="'abrirEliminarParametro(' + ${p.idParametro} + ')'" title="Eliminar"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal Nuevo Usuario -->
+    <div class="modal fade" id="modalUsuario" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-person-plus"></i> Crear Usuario</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="formUsuario">
+            <div class="modal-body">
+              <div class="mb-2">
+                <label class="form-label">Nombre Completo *</label>
+                <input type="text" id="nombreCompleto" class="form-control" required />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Correo *</label>
+                <input type="email" id="correo" class="form-control" required />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Contraseña *</label>
+                <input type="password" id="password" class="form-control" required />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Rol *</label>
+                <div class="buscador-campo input-group">
+                  <input type="hidden" id="idRol" />
+                  <input type="text" id="idRolTexto" class="form-control placeholder-muted" placeholder="Buscar rol..." readonly required />
+                  <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorRol()"><i class="bi bi-search"></i></button>
+                  <button type="button" class="btn btn-outline-secondary" onclick="limpiarBuscador('idRol')" title="Limpiar"><i class="bi bi-x-lg"></i></button>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar Usuario</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Ver Detalle Usuario -->
+    <div class="modal fade" id="modalDetalleUsuario" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-info-circle"></i> Detalle del Usuario</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body"><div id="detalleUsuarioBody" class="row g-3"></div></div>
+          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar Usuario -->
+    <div class="modal fade" id="modalEditarUsuario" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Usuario</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="formEditarUsuario">
+            <div class="modal-body">
+              <input type="hidden" id="edit_id_usuario" />
+              <div class="mb-2">
+                <label for="edit_nombreCompleto" class="form-label fw-semibold small">Nombre Completo *</label>
+                <input type="text" id="edit_nombreCompleto" class="form-control" required />
+              </div>
+              <div class="mb-2">
+                <label for="edit_correo" class="form-label fw-semibold small">Correo *</label>
+                <input type="email" id="edit_correo" class="form-control" required />
+              </div>
+              <div class="row g-2">
+                <div class="col-md-8">
+                  <label for="edit_idRol" class="form-label fw-semibold small">Rol *</label>
+                  <select id="edit_idRol" class="form-select"></select>
+                </div>
+                <div class="col-md-4">
+                  <label for="edit_activo" class="form-label fw-semibold small">Estado</label>
+                  <select id="edit_activo" class="form-select">
+                    <option value="true">ACTIVO</option>
+                    <option value="false">INACTIVO</option>
+                  </select>
+                </div>
+              </div>
+              <p class="small text-muted mt-3 mb-0"><i class="bi bi-info-circle"></i> La contraseña no se modifica desde aquí.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar Cambios</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Eliminar Usuario -->
+    <div class="modal fade" id="modalEliminarUsuario" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Eliminar Usuario</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-2">¿Seguro que deseas eliminar a <strong id="eliminarUsuarioNombre">—</strong>?</p>
+            <p class="text-danger small mb-0"><i class="bi bi-info-circle"></i> Si el usuario tiene movimientos asociados, la base de datos impedirá el borrado. Como alternativa puedes desactivar la cuenta con el botón de toggle.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger" id="btnConfirmarEliminarUsuario"><i class="bi bi-trash"></i> Sí, eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Ver Detalle Parámetro -->
+    <div class="modal fade" id="modalDetalleParametro" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-info-circle"></i> Detalle del Parámetro</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body"><div id="detalleParametroBody" class="row g-3"></div></div>
+          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar Parámetro -->
+    <!-- Modal Nuevo Parámetro -->
+    <div class="modal fade" id="modalParametro" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-plus-square"></i> Nuevo Parámetro de Prueba</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="formParametro">
+            <div class="modal-body">
+              <div class="mb-2">
+                <label for="nuevo_tipoPrueba" class="form-label fw-semibold small">Tipo de Prueba *</label>
+                <input type="text" id="nuevo_tipoPrueba" class="form-control" placeholder="Ej. METALMECANICA, ELECTRICA" required />
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                  <label for="nuevo_unidad" class="form-label fw-semibold small">Unidad *</label>
+                  <input type="text" id="nuevo_unidad" class="form-control" placeholder="Ej. mm, ud, kV" required />
+                </div>
+                <div class="col-md-4">
+                  <label for="nuevo_valorMinimo" class="form-label fw-semibold small">Mínimo *</label>
+                  <input type="number" step="0.001" id="nuevo_valorMinimo" class="form-control" required />
+                </div>
+                <div class="col-md-4">
+                  <label for="nuevo_valorMaximo" class="form-label fw-semibold small">Máximo *</label>
+                  <input type="number" step="0.001" id="nuevo_valorMaximo" class="form-control" required />
+                </div>
+              </div>
+              <div class="mb-2">
+                <label for="nuevo_normaReferencia" class="form-label fw-semibold small">Norma Técnica</label>
+                <input type="text" id="nuevo_normaReferencia" class="form-control" placeholder="Ej. IEC 61439" />
+              </div>
+              <p class="small text-muted mb-0"><i class="bi bi-info-circle"></i> El rango define si una inspección resulta CONFORME o NO_CONFORME.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar Parámetro</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="modalEditarParametro" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Parámetro de Prueba</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="formEditarParametro">
+            <div class="modal-body">
+              <input type="hidden" id="edit_id_parametro" />
+              <div class="mb-2">
+                <label for="edit_tipoPrueba" class="form-label fw-semibold small">Tipo de Prueba *</label>
+                <input type="text" id="edit_tipoPrueba" class="form-control" required />
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                  <label for="edit_unidad" class="form-label fw-semibold small">Unidad *</label>
+                  <input type="text" id="edit_unidad" class="form-control" placeholder="Ej. mm, ud, kV" required />
+                </div>
+                <div class="col-md-4">
+                  <label for="edit_valorMinimo" class="form-label fw-semibold small">Mínimo *</label>
+                  <input type="number" step="0.001" id="edit_valorMinimo" class="form-control" required />
+                </div>
+                <div class="col-md-4">
+                  <label for="edit_valorMaximo" class="form-label fw-semibold small">Máximo *</label>
+                  <input type="number" step="0.001" id="edit_valorMaximo" class="form-control" required />
+                </div>
+              </div>
+              <div class="mb-2">
+                <label for="edit_normaReferencia" class="form-label fw-semibold small">Norma Técnica</label>
+                <input type="text" id="edit_normaReferencia" class="form-control" placeholder="Ej. IEC 61439" />
+              </div>
+              <p class="small text-muted mb-0"><i class="bi bi-info-circle"></i> El rango define si una inspección resulta CONFORME o NO_CONFORME.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar Cambios</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Eliminar Parámetro -->
+    <div class="modal fade" id="modalEliminarParametro" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Eliminar Parámetro</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-2">¿Seguro que deseas eliminar el parámetro <strong id="eliminarParametroNombre">—</strong>?</p>
+            <p class="text-danger small mb-0"><i class="bi bi-info-circle"></i> Si el parámetro tiene inspecciones asociadas, la base de datos impedirá el borrado.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger" id="btnConfirmarEliminarParametro"><i class="bi bi-trash"></i> Sí, eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div th:replace="~{fragments/buscador-modal :: buscador}"></div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script th:inline="javascript">
+      const ROLES = /*[[${roles.![{ 'idRol': idRol, 'nombre': nombre }]}]]*/ [];
+      const USUARIOS_REG = /*[[${usuarios.![{
+        'id': idUsuario,
+        'nombreCompleto': nombreCompleto,
+        'correo': correo,
+        'idRol': rol.idRol,
+        'rolNombre': rol.nombre,
+        'activo': activo,
+        'ultimoAcceso': (ultimoAcceso != null ? #temporals.format(ultimoAcceso, 'dd/MM/yyyy HH:mm') : null)
+      }]}]]*/ [];
+      const PARAMETROS_REG = /*[[${parametros.![{
+        'id': idParametro,
+        'tipoPrueba': tipoPrueba,
+        'unidad': unidad,
+        'valorMinimo': valorMinimo,
+        'valorMaximo': valorMaximo,
+        'normaReferencia': normaReferencia
+      }]}]]*/ [];
+    </script>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script th:inline="javascript">
+      const rolesData = (ROLES || []).map((r) => ({ idRol: r.idRol, nombre: r.nombre || "" }));
+      const regUsuarios = Object.fromEntries((USUARIOS_REG || []).map((u) => [u.id, u]));
+      function esc(s) { return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+      // Rellena el <select> de roles del modal editar
+      (function () {
+        const sel = document.getElementById("edit_idRol");
+        if (sel) sel.innerHTML = rolesData.map((r) => `<option value="${r.idRol}">${esc(r.nombre)}</option>`).join("");
+      })();
+
+      function limpiarBuscador(base) {
+        document.getElementById(base).value = "";
+        const t = document.getElementById(base + "Texto");
+        if (t) t.value = "";
+      }
+
+      function abrirBuscadorRol() {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar rol", icono: "bi-person-badge", datos: rolesData,
+          placeholder: "Buscar rol...", buscarEn: ["nombre"],
+          columnas: [{ titulo: "Rol", campo: "nombre", clase: "fw-bold" }],
+          vacio: "No se encontraron roles.",
+          alSeleccionar: (r) => { document.getElementById("idRol").value = r.idRol; document.getElementById("idRolTexto").value = r.nombre; },
+        });
+      }
+
+      // --- Alta ---
+      document.getElementById("formUsuario")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!document.getElementById("idRol").value) { SPO.toast("Seleccione un rol.", "warning"); return; }
+        const data = {
+          nombreCompleto: document.getElementById("nombreCompleto").value,
+          correo: document.getElementById("correo").value,
+          password: document.getElementById("password").value,
+          idRol: document.getElementById("idRol").value,
+        };
+        const res = await fetch("/api/admin/usuarios", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(data) });
+        if (res.ok) { SPO.toast("Usuario creado.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error:"Error." })); SPO.toast(err.error, "danger"); }
+      });
+
+      async function toggleEstado(id, activo) {
+        const res = await fetch(`/api/admin/usuarios/${id}/estado`, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ activo }) });
+        if (res.ok) { SPO.toast("Estado actualizado.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error:"Error." })); SPO.toast(err.error, "danger"); }
+      }
+
+      // --- Ver Detalle ---
+      function abrirDetalleUsuario(id) {
+        const u = regUsuarios[id];
+        if (!u) { SPO.toast("No se encontró el usuario.", "danger"); return; }
+        const campo = (l, v, extra="") => `<div class="col-md-6"><div class="detalle-campo"><span class="detalle-label">${l}</span><span class="detalle-valor ${extra}">${v}</span></div></div>`;
+        document.getElementById("detalleUsuarioBody").innerHTML =
+          `<div class="col-12"><div class="detalle-campo"><span class="detalle-label">Nombre Completo</span><span class="detalle-valor fw-bold">${esc(u.nombreCompleto)}</span></div></div>` +
+          campo("Correo", esc(u.correo)) +
+          campo("Rol", `<span class="badge bg-primary">${esc(u.rolNombre)}</span>`) +
+          campo("Estado", u.activo ? `<span class="badge bg-success">ACTIVO</span>` : `<span class="badge bg-danger">INACTIVO</span>`) +
+          campo("Último acceso", esc(u.ultimoAcceso || "—"));
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetalleUsuario")).show();
+      }
+
+      // --- Editar ---
+      function abrirEditarUsuario(id) {
+        const u = regUsuarios[id];
+        if (!u) { SPO.toast("No se encontró el usuario.", "danger"); return; }
+        document.getElementById("edit_id_usuario").value = u.id;
+        document.getElementById("edit_nombreCompleto").value = u.nombreCompleto || "";
+        document.getElementById("edit_correo").value = u.correo || "";
+        document.getElementById("edit_idRol").value = u.idRol;
+        document.getElementById("edit_activo").value = String(u.activo);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEditarUsuario")).show();
+      }
+      document.getElementById("formEditarUsuario")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("edit_id_usuario").value;
+        const data = {
+          nombreCompleto: document.getElementById("edit_nombreCompleto").value.trim(),
+          correo: document.getElementById("edit_correo").value.trim(),
+          idRol: document.getElementById("edit_idRol").value,
+          activo: document.getElementById("edit_activo").value === "true",
+        };
+        const res = await fetch(`/api/admin/usuarios/${id}`, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(data) });
+        if (res.ok) { bootstrap.Modal.getInstance(document.getElementById("modalEditarUsuario"))?.hide(); SPO.toast("Usuario actualizado.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error:"Error al actualizar." })); SPO.toast(err.error || "Error al actualizar.", "danger"); }
+      });
+
+      // --- Eliminar ---
+      let idEliminarUsuario = null;
+      function abrirEliminarUsuario(id) {
+        idEliminarUsuario = id;
+        const u = regUsuarios[id];
+        document.getElementById("eliminarUsuarioNombre").textContent = u ? u.nombreCompleto : "el usuario seleccionado";
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEliminarUsuario")).show();
+      }
+      document.getElementById("btnConfirmarEliminarUsuario")?.addEventListener("click", async () => {
+        if (idEliminarUsuario == null) return;
+        const btn = document.getElementById("btnConfirmarEliminarUsuario");
+        btn.disabled = true; btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Eliminando…`;
+        try {
+          const res = await fetch(`/api/admin/usuarios/${idEliminarUsuario}`, { method:"DELETE" });
+          if (res.ok) { bootstrap.Modal.getInstance(document.getElementById("modalEliminarUsuario"))?.hide(); SPO.toast("Usuario eliminado.", "success"); setTimeout(() => location.reload(), 700); }
+          else { const err = await res.json().catch(() => ({ error:"Error al eliminar." })); SPO.toast(err.error || "Error al eliminar.", "danger"); }
+        } finally { btn.disabled = false; btn.innerHTML = `<i class="bi bi-trash"></i> Sí, eliminar`; }
+      });
+
+      SPO.paginacion.init("tablaUsuarios", { porPagina: 100, buscarInput: "busquedaUsuarios" });
+      const regParametros = Object.fromEntries((PARAMETROS_REG || []).map((p) => [p.id, p]));
+
+      // ===== Parámetros: Ver Detalle / Editar / Eliminar =====
+      function abrirDetalleParametro(id) {
+        const p = regParametros[id];
+        if (!p) { SPO.toast("No se encontró el parámetro.", "danger"); return; }
+        const campo = (l, v, extra="") => `<div class="col-md-6"><div class="detalle-campo"><span class="detalle-label">${l}</span><span class="detalle-valor ${extra}">${v}</span></div></div>`;
+        document.getElementById("detalleParametroBody").innerHTML =
+          `<div class="col-12"><div class="detalle-campo"><span class="detalle-label">Tipo de Prueba</span><span class="detalle-valor fw-bold">${esc(p.tipoPrueba)}</span></div></div>` +
+          campo("Unidad", esc(p.unidad)) +
+          campo("Valor Mínimo", esc(p.valorMinimo)) +
+          campo("Valor Máximo", esc(p.valorMaximo)) +
+          campo("Norma Técnica", esc(p.normaReferencia || "—"));
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetalleParametro")).show();
+      }
+
+      function abrirEditarParametro(id) {
+        const p = regParametros[id];
+        if (!p) { SPO.toast("No se encontró el parámetro.", "danger"); return; }
+        document.getElementById("edit_id_parametro").value = p.id;
+        document.getElementById("edit_tipoPrueba").value = p.tipoPrueba || "";
+        document.getElementById("edit_unidad").value = p.unidad || "";
+        document.getElementById("edit_valorMinimo").value = p.valorMinimo;
+        document.getElementById("edit_valorMaximo").value = p.valorMaximo;
+        document.getElementById("edit_normaReferencia").value = p.normaReferencia || "";
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEditarParametro")).show();
+      }
+      // --- Alta de Parámetro (POST) ---
+      document.getElementById("formParametro")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = {
+          tipoPrueba: document.getElementById("nuevo_tipoPrueba").value.trim(),
+          unidad: document.getElementById("nuevo_unidad").value.trim(),
+          valorMinimo: document.getElementById("nuevo_valorMinimo").value,
+          valorMaximo: document.getElementById("nuevo_valorMaximo").value,
+          normaReferencia: document.getElementById("nuevo_normaReferencia").value.trim() || null,
+        };
+        const res = await fetch("/api/admin/parametros-prueba", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(data) });
+        if (res.ok) { bootstrap.Modal.getInstance(document.getElementById("modalParametro"))?.hide(); SPO.toast("Parámetro creado.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error:"Error al crear." })); SPO.toast(err.error || "Error al crear.", "danger"); }
+      });
+
+      document.getElementById("formEditarParametro")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("edit_id_parametro").value;
+        const data = {
+          tipoPrueba: document.getElementById("edit_tipoPrueba").value.trim(),
+          unidad: document.getElementById("edit_unidad").value.trim(),
+          valorMinimo: document.getElementById("edit_valorMinimo").value,
+          valorMaximo: document.getElementById("edit_valorMaximo").value,
+          normaReferencia: document.getElementById("edit_normaReferencia").value.trim() || null,
+        };
+        const res = await fetch(`/api/admin/parametros-prueba/${id}`, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(data) });
+        if (res.ok) { bootstrap.Modal.getInstance(document.getElementById("modalEditarParametro"))?.hide(); SPO.toast("Parámetro actualizado.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error:"Error al actualizar." })); SPO.toast(err.error || "Error al actualizar.", "danger"); }
+      });
+
+      let idEliminarParametro = null;
+      function abrirEliminarParametro(id) {
+        idEliminarParametro = id;
+        const p = regParametros[id];
+        document.getElementById("eliminarParametroNombre").textContent = p ? p.tipoPrueba : "el parámetro";
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEliminarParametro")).show();
+      }
+      document.getElementById("btnConfirmarEliminarParametro")?.addEventListener("click", async () => {
+        if (idEliminarParametro == null) return;
+        const btn = document.getElementById("btnConfirmarEliminarParametro");
+        btn.disabled = true; btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Eliminando…`;
+        try {
+          const res = await fetch(`/api/admin/parametros-prueba/${idEliminarParametro}`, { method:"DELETE" });
+          if (res.ok) { bootstrap.Modal.getInstance(document.getElementById("modalEliminarParametro"))?.hide(); SPO.toast("Parámetro eliminado.", "success"); setTimeout(() => location.reload(), 700); }
+          else { const err = await res.json().catch(() => ({ error:"Error al eliminar." })); SPO.toast(err.error || "Error al eliminar.", "danger"); }
+        } finally { btn.disabled = false; btn.innerHTML = `<i class="bi bi-trash"></i> Sí, eliminar`; }
+      });
+
+      SPO.paginacion.init("tablaParametros", { porPagina: 100, buscarInput: "busquedaParametros" });
+    </script>
+  </body>
+</html>

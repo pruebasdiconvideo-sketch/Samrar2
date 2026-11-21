@@ -1,0 +1,218 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head th:replace="fragments/head :: head('Mermas y Devoluciones')"></head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <main class="app-main container pb-5">
+      <div class="page-header">
+        <div>
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-arrow-repeat"></i></span>
+            Gestión de Devoluciones y Mermas
+          </h4>
+          <p class="page-subtitle">Registro, reintegro y validación de material devuelto o descartado</p>
+        </div>
+        <button th:if="${rolActual == 'OPERARIO_ENSAMBLE'}" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalMerma">
+          <i class="bi bi-plus-lg"></i> Registrar Devolución / Merma
+        </button>
+      </div>
+
+      <div class="card card-spo">
+        <div class="tabla-toolbar">
+          <div class="tabla-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="busquedaMerma" class="form-control" placeholder="Buscar por ID, proyecto, material o estado..." />
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="tablaMerma">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Proyecto</th>
+                <th>Material</th>
+                <th>Tipo</th>
+                <th>Cant.</th>
+                <th>Motivo</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(registros)}" data-spo-ignore="true">
+                <td colspan="8" class="text-center text-muted py-4">No hay registros de mermas o devoluciones.</td>
+              </tr>
+              <tr th:each="r : ${registros}">
+                <td th:text="'#' + ${r.idMerma}"></td>
+                <td th:text="${r.proyecto.codigo}"></td>
+                <td th:text="${r.material.codigo + ' - ' + r.material.nombre}"></td>
+                <td><span class="badge" th:classappend="${r.tipo == 'DEVOLUCION'} ? 'bg-info text-dark' : 'bg-warning text-dark'" th:text="${r.tipo}"></span></td>
+                <td th:text="${r.cantidad}"></td>
+                <td class="small" th:text="${r.motivo}"></td>
+                <td><span class="badge bg-secondary" th:text="${r.estado}"></span></td>
+                <td>
+                  <div th:if="${r.estado == 'PENDIENTE'}">
+                    <button th:if="${rolActual == 'ALMACENERO' and r.tipo == 'DEVOLUCION'}" class="btn btn-success btn-sm" th:onclick="'accionMerma(' + ${r.idMerma} + ', \'reintegrar\')'">
+                      <i class="bi bi-arrow-counterclockwise"></i> Reintegrar
+                    </button>
+                    <button th:if="${rolActual == 'ALMACENERO' and r.tipo == 'DEVOLUCION'}" class="btn btn-warning btn-sm" th:onclick="'accionMerma(' + ${r.idMerma} + ', \'marcar-merma\')'">
+                      <i class="bi bi-trash"></i> Marcar Merma
+                    </button>
+                    <button th:if="${rolActual == 'JEFE_PRODUCCION' and r.tipo == 'MERMA'}" class="btn btn-danger btn-sm" th:onclick="'accionMerma(' + ${r.idMerma} + ', \'validar\')'">
+                      <i class="bi bi-check2-square"></i> Validar Merma
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal Registro Operario -->
+    <div class="modal fade" id="modalMerma" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-arrow-repeat"></i> Registrar Devolución o Merma</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="formMerma">
+            <div class="modal-body">
+              <div class="mb-2">
+                <label class="form-label">Tipo *</label>
+                <select id="tipo" class="form-select">
+                  <option value="DEVOLUCION">DEVOLUCION (Sobrante útil)</option>
+                  <option value="MERMA">MERMA (Material dañado/descarte)</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Proyecto *</label>
+                <div class="buscador-campo input-group">
+                  <input type="hidden" id="idProyecto" />
+                  <input type="text" id="idProyectoTexto" class="form-control placeholder-muted" placeholder="Buscar proyecto..." readonly required />
+                  <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorProyectoMerma()"><i class="bi bi-search"></i></button>
+                  <button type="button" class="btn btn-outline-secondary" onclick="limpiarBuscador('idProyecto')" title="Limpiar"><i class="bi bi-x-lg"></i></button>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Material *</label>
+                <div class="buscador-campo input-group">
+                  <input type="hidden" id="idMaterial" />
+                  <input type="text" id="idMaterialTexto" class="form-control placeholder-muted" placeholder="Buscar material..." readonly required />
+                  <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorMaterialMerma()"><i class="bi bi-search"></i></button>
+                  <button type="button" class="btn btn-outline-secondary" onclick="limpiarBuscador('idMaterial')" title="Limpiar"><i class="bi bi-x-lg"></i></button>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Cantidad *</label>
+                <input type="number" id="cantidad" min="1" value="1" class="form-control" required />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Motivo (obligatorio si es MERMA)</label>
+                <textarea id="motivo" class="form-control" rows="2"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Registrar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div th:replace="~{fragments/buscador-modal :: buscador}"></div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script th:inline="javascript">
+      const PROYECTOS = /*[[${proyectos.![{ 'idProyecto': idProyecto, 'codigo': codigo, 'cliente': cliente }]}]]*/ [];
+      const MATERIALES = /*[[${materiales.![{ 'idMaterial': idMaterial, 'codigo': codigo, 'nombre': nombre, 'categoria': categoria, 'proyectoAsignado': proyectoAsignado }]}]]*/ [];
+    </script>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script th:inline="javascript">
+      const proyectosData = (PROYECTOS || []).map((p) => ({ idProyecto: p.idProyecto, codigo: p.codigo || "", cliente: p.cliente || "" }));
+      const materialesData = (MATERIALES || []).map((m) => ({ idMaterial: m.idMaterial, codigo: m.codigo || "", nombre: m.nombre || "", categoria: m.categoria || "", proyectoAsignado: m.proyectoAsignado || "" }));
+
+      function limpiarBuscador(base) {
+        document.getElementById(base).value = "";
+        const t = document.getElementById(base + "Texto");
+        if (t) t.value = "";
+      }
+
+      function abrirBuscadorProyectoMerma() {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar proyecto",
+          icono: "bi-kanban",
+          datos: proyectosData,
+          placeholder: "Buscar por código o cliente...",
+          buscarEn: ["codigo", "cliente"],
+          columnas: [
+            { titulo: "Código", campo: "codigo", clase: "fw-bold" },
+            { titulo: "Cliente / Obra", campo: "cliente" },
+          ],
+          vacio: "No se encontraron proyectos.",
+          alSeleccionar: (p) => {
+            document.getElementById("idProyecto").value = p.idProyecto;
+            document.getElementById("idProyectoTexto").value = p.codigo + " — " + p.cliente;
+          },
+        });
+      }
+
+      function abrirBuscadorMaterialMerma() {
+        SPO.buscadorModal.abrir({
+          titulo: "Seleccionar material",
+          icono: "bi-box-seam",
+          datos: materialesData,
+          placeholder: "Buscar por código o nombre...",
+          buscarEn: ["codigo", "nombre", "categoria"],
+          columnas: [
+            { titulo: "Código", campo: "codigo", clase: "fw-bold text-nowrap" },
+            { titulo: "Equipo / Material", campo: "nombre" },
+            { titulo: "Categoría", campo: "categoria", render: (m) => `<span class="badge bg-secondary">${m.categoria || '-'}</span>` },
+            { titulo: "Proyecto", campo: "proyectoAsignado", render: (m) => m.proyectoAsignado || "General" },
+          ],
+          vacio: "No se encontraron materiales.",
+          alSeleccionar: (m) => {
+            document.getElementById("idMaterial").value = m.idMaterial;
+            document.getElementById("idMaterialTexto").value = m.codigo + " — " + m.nombre;
+          },
+        });
+      }
+
+      document.getElementById("formMerma")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const tipo = document.getElementById("tipo").value;
+        const motivo = document.getElementById("motivo").value.trim();
+        if (tipo === "MERMA" && !motivo) { SPO.toast("El motivo es obligatorio para una MERMA.", "warning"); return; }
+        if (!document.getElementById("idProyecto").value) { SPO.toast("Seleccione el proyecto.", "warning"); return; }
+        if (!document.getElementById("idMaterial").value) { SPO.toast("Seleccione el material.", "warning"); return; }
+
+        const data = {
+          tipo,
+          idProyecto: document.getElementById("idProyecto").value,
+          idMaterial: document.getElementById("idMaterial").value,
+          cantidad: document.getElementById("cantidad").value,
+          motivo,
+        };
+        const res = await fetch("/api/merma/devoluciones", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) { SPO.toast("Registro creado correctamente.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error: "Error." })); SPO.toast(err.error, "danger"); }
+      });
+
+      async function accionMerma(id, endpoint) {
+        const res = await fetch(`/api/merma/devoluciones/${id}/${endpoint}`, { method: "POST" });
+        if (res.ok) { SPO.toast("Acción realizada.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error: "Error." })); SPO.toast(err.error, "danger"); }
+      }
+
+      SPO.paginacion.init("tablaMerma", { porPagina: 100, buscarInput: "busquedaMerma" });
+    </script>
+  </body>
+</html>
