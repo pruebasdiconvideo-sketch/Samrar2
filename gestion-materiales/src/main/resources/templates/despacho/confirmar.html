@@ -1,0 +1,128 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head th:replace="fragments/head :: head('Confirmar Entrega')"></head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <main class="app-main container pb-5">
+      <div class="page-header">
+        <div>
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-check2-circle"></i></span>
+            Despachos Pendientes de Confirmación en Taller
+          </h4>
+          <p class="page-subtitle">Confirmación de recepción física de materiales por el operario</p>
+        </div>
+      </div>
+
+      <div class="card card-spo mb-5">
+        <div class="tabla-toolbar">
+          <div class="tabla-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="busquedaPendientes" class="form-control" placeholder="Buscar por despacho, OTI o proyecto..." />
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="tablaPendientes">
+            <thead class="table-dark">
+              <tr>
+                <th>ID Despacho / OTI</th>
+                <th>Proyecto</th>
+                <th>Tipo</th>
+                <th>Ítems Entregados</th>
+                <th>Fecha Despacho</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(despachos)}" data-spo-ignore="true">
+                <td colspan="6" class="text-center text-muted py-4">No hay despachos pendientes de confirmar.</td>
+              </tr>
+              <tr th:each="d : ${despachos}">
+                <td class="fw-bold text-nowrap" th:text="'DESP-' + ${#numbers.formatInteger(d.idDespacho, 4)} + ' (OTI-' + ${#numbers.formatInteger(d.solicitud.idSolicitud, 4)} + ')'"></td>
+                <td th:text="${d.solicitud.proyecto.codigo + ' - ' + d.solicitud.proyecto.cliente}"></td>
+                <td><span class="badge bg-info text-dark" th:text="${d.tipo}"></span></td>
+                <td class="small">
+                  <ul class="mb-0 ps-3">
+                    <li th:each="dd : ${d.detalles}" th:text="${dd.material.codigo + ' — ' + dd.material.nombre + ' (Cant: ' + dd.cantidadEntregada + ')'}"></li>
+                  </ul>
+                </td>
+                <td class="small text-nowrap" th:text="${#temporals.format(d.fechaDespacho, 'dd/MM/yyyy HH:mm')}"></td>
+                <td>
+                  <button type="button" class="btn btn-success btn-sm fw-semibold" th:onclick="'confirmar(' + ${d.idDespacho} + ')'">
+                    <i class="bi bi-check-lg"></i> Confirmar Recepción
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="page-header">
+        <h5 class="page-title">
+          <span class="title-icon"><i class="bi bi-clock-history"></i></span>
+          Historial de Entregas Recibidas en Taller
+        </h5>
+      </div>
+      <div class="card card-spo">
+        <div class="tabla-toolbar">
+          <div class="tabla-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="busquedaConfirmadas" class="form-control" placeholder="Buscar por entrega, proyecto o receptor..." />
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="tablaConfirmadas">
+            <thead class="table-dark">
+              <tr>
+                <th>N° Entrega / Despacho</th>
+                <th>Proyecto</th>
+                <th>Materiales Recibidos</th>
+                <th>Recibido por</th>
+                <th>Fecha Recepción</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(entregasConfirmadas)}" data-spo-ignore="true">
+                <td colspan="6" class="text-center text-muted py-3">Aún no se han confirmado recepciones en taller.</td>
+              </tr>
+              <tr th:each="e : ${entregasConfirmadas}">
+                <td class="fw-bold text-nowrap" th:text="'ENT-' + ${#numbers.formatInteger(e.idEntrega, 4)} + ' / DESP-' + ${#numbers.formatInteger(e.despacho.idDespacho, 4)}"></td>
+                <td th:text="${e.despacho.solicitud.proyecto.codigo + ' - ' + e.despacho.solicitud.proyecto.cliente}"></td>
+                <td class="small">
+                  <ul class="mb-0 ps-3">
+                    <li th:each="dd : ${e.despacho.detalles}" th:text="${dd.material.codigo + ' — ' + dd.material.nombre + ' (Cant: ' + dd.cantidadEntregada + ')'}"></li>
+                  </ul>
+                </td>
+                <td class="small" th:text="${e.usuarioOperario.nombreCompleto}"></td>
+                <td class="small text-nowrap" th:text="${#temporals.format(e.fechaConfirmacion, 'dd/MM/yyyy HH:mm')}"></td>
+                <td><span class="badge bg-success">RECIBIDO EN TALLER</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script>
+      async function confirmar(idDespacho) {
+        if (!confirm("¿Confirma que recibió físicamente todos los materiales en taller?")) return;
+        const res = await fetch(`/api/despacho/${idDespacho}/confirmar`, { method: "POST" });
+        if (res.ok) {
+          SPO.toast("Recepción confirmada. Stock descontado y trazabilidad registrada.", "success");
+          setTimeout(() => location.reload(), 900);
+        } else {
+          const err = await res.json().catch(() => ({ error: "Error." }));
+          SPO.toast(err.error, "danger");
+        }
+      }
+
+      SPO.paginacion.init("tablaPendientes", { porPagina: 100, buscarInput: "busquedaPendientes" });
+      SPO.paginacion.init("tablaConfirmadas", { porPagina: 100, buscarInput: "busquedaConfirmadas" });
+    </script>
+  </body>
+</html>

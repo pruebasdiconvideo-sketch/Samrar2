@@ -1,0 +1,272 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head th:replace="fragments/head :: head('Trazabilidad de Materiales')"></head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <main class="app-main container pb-5">
+      <div class="page-header">
+        <div>
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-clock-history"></i></span>
+            Kardex y Trazabilidad Histórica por Material
+          </h4>
+          <p class="page-subtitle">Movimientos de entrada, salida y devolución registrados en el sistema</p>
+        </div>
+      </div>
+
+      <div class="card card-spo">
+        <div class="tabla-toolbar">
+          <div class="buscador-campo input-group" style="max-width:340px;">
+            <input type="hidden" id="filtroMaterialValor" />
+            <input type="text" id="filtroMaterialTexto" class="form-control placeholder-muted" placeholder="Filtrar por material (todos)" readonly />
+            <button type="button" class="btn btn-outline-primary" onclick="abrirBuscadorMaterialFiltro()" title="Buscar material">
+              <i class="bi bi-search"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="limpiarFiltroMaterial()" title="Todos">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="tabla-search ms-auto">
+            <i class="bi bi-search"></i>
+            <input type="text" id="busquedaTrazabilidad" class="form-control" placeholder="Buscar por movimiento, documento o usuario..." />
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped align-middle mb-0" id="tablaTrazabilidad">
+            <thead class="table-dark">
+              <tr>
+                <th>Fecha y Hora</th>
+                <th>Material</th>
+                <th>Tipo Movimiento</th>
+                <th>Cantidad</th>
+                <th>Documento / Proyecto</th>
+                <th>Usuario Responsable</th>
+                <th class="text-center text-nowrap">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(movimientos)}" data-spo-ignore="true">
+                <td colspan="7" class="text-center text-muted py-4">No hay movimientos registrados.</td>
+              </tr>
+              <tr th:each="t : ${movimientos}" th:data-material="${t.material.codigo}" th:data-id="${t.idTrazabilidad}">
+                <td th:text="${#temporals.format(t.fechaMovimiento, 'dd/MM/yyyy HH:mm')}"></td>
+                <td th:text="${t.material.codigo + ' - ' + t.material.nombre}"></td>
+                <td><span class="badge bg-dark" th:text="${t.tipoMovimiento}"></span></td>
+                <td class="fw-bold" th:text="${t.cantidad}"></td>
+                <td th:text="${t.proyecto != null ? t.proyecto.codigo : (t.ordenCompra != null ? t.ordenCompra.codigo : '-')}"></td>
+                <td th:text="${t.usuario.nombreCompleto}"></td>
+                <td class="text-center text-nowrap">
+                  <div class="btn-group btn-group-sm acciones-grupo">
+                    <button type="button" class="btn btn-outline-info" th:onclick="'abrirDetalleTraz(' + ${t.idTrazabilidad} + ')'" title="Ver detalle"><i class="bi bi-eye"></i></button>
+                    <button th:if="${rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}" type="button" class="btn btn-outline-warning" th:onclick="'abrirEditarTraz(' + ${t.idTrazabilidad} + ')'" title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button th:if="${rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}" type="button" class="btn btn-outline-danger" th:onclick="'abrirEliminarTraz(' + ${t.idTrazabilidad} + ')'" title="Eliminar"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal Ver Detalle Trazabilidad -->
+    <div class="modal fade" id="modalDetalleTraz" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-info-circle"></i> Detalle del Movimiento</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body"><div id="detalleTrazBody" class="row g-3"></div></div>
+          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar Trazabilidad -->
+    <div class="modal fade" id="modalEditarTraz" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Movimiento</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="formEditarTraz">
+            <div class="modal-body">
+              <input type="hidden" id="edit_id_traz" />
+              <div class="mb-2">
+                <label for="edit_tipoMov" class="form-label fw-semibold small">Tipo de Movimiento *</label>
+                <select id="edit_tipoMov" class="form-select">
+                  <option value="ENTRADA">ENTRADA</option>
+                  <option value="SALIDA">SALIDA</option>
+                  <option value="DEVOLUCION">DEVOLUCION</option>
+                  <option value="MERMA">MERMA</option>
+                  <option value="AJUSTE">AJUSTE</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label for="edit_cant" class="form-label fw-semibold small">Cantidad *</label>
+                <input type="number" min="0" id="edit_cant" class="form-control" required />
+              </div>
+              <div class="detalle-campo">
+                <span class="detalle-label">Material / Usuario (no editable)</span>
+                <span class="detalle-valor small" id="edit_traz_contexto"></span>
+              </div>
+              <p class="text-warning small mt-3 mb-0"><i class="bi bi-exclamation-triangle"></i> Esta edición NO recalcula el stock del material; úsala solo para corregir errores de registro.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar Cambios</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Eliminar Trazabilidad -->
+    <div class="modal fade" id="modalEliminarTraz" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Eliminar Movimiento</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">¿Seguro que deseas eliminar el movimiento de <strong id="eliminarTrazNombre">—</strong>?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger" id="btnConfirmarEliminarTraz"><i class="bi bi-trash"></i> Sí, eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div th:replace="~{fragments/buscador-modal :: buscador}"></div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script th:inline="javascript">
+      const TRAZABILIDAD_REG = /*[[${movimientos.![{
+        'id': idTrazabilidad,
+        'fecha': #temporals.format(fechaMovimiento, 'dd/MM/yyyy HH:mm'),
+        'materialCodigo': material.codigo,
+        'materialNombre': material.nombre,
+        'tipoMovimiento': tipoMovimiento,
+        'cantidad': cantidad,
+        'proyectoCodigo': (proyecto != null ? proyecto.codigo : null),
+        'ordenCompraCodigo': (ordenCompra != null ? ordenCompra.codigo : null),
+        'usuarioNombre': usuario.nombreCompleto
+      }]}]]*/ [];
+    </script>
+    <script>
+      // Construye la lista única de materiales a partir de las filas renderizadas
+      function materialesUnicos() {
+        const seen = new Set();
+        const lista = [];
+        document.querySelectorAll("#tablaTrazabilidad tbody tr").forEach((tr) => {
+          if (tr.dataset.spoIgnore) return;
+          const codigo = tr.getAttribute("data-material") || "";
+          if (!codigo || seen.has(codigo)) return;
+          seen.add(codigo);
+          const celda = tr.children[1]?.textContent || "";
+          const nombre = celda.includes(" - ") ? celda.split(" - ").slice(1).join(" - ").trim() : celda;
+          lista.push({ codigo, nombre });
+        });
+        return lista;
+      }
+
+      function abrirBuscadorMaterialFiltro() {
+        SPO.buscadorModal.abrir({
+          titulo: "Filtrar trazabilidad por material",
+          icono: "bi-box-seam",
+          datos: materialesUnicos(),
+          placeholder: "Buscar por código o nombre...",
+          buscarEn: ["codigo", "nombre"],
+          columnas: [
+            { titulo: "Código", campo: "codigo", clase: "fw-bold text-nowrap" },
+            { titulo: "Equipo / Material", campo: "nombre" },
+          ],
+          vacio: "No se encontraron materiales.",
+          alSeleccionar: (m) => {
+            document.getElementById("filtroMaterialValor").value = m.codigo;
+            document.getElementById("filtroMaterialTexto").value = m.codigo + " — " + m.nombre;
+            SPO.paginacion.refrescar("tablaTrazabilidad");
+          },
+        });
+      }
+
+      function limpiarFiltroMaterial() {
+        document.getElementById("filtroMaterialValor").value = "";
+        document.getElementById("filtroMaterialTexto").value = "";
+        SPO.paginacion.refrescar("tablaTrazabilidad");
+      }
+
+      const regTraz = Object.fromEntries((TRAZABILIDAD_REG || []).map((t) => [t.id, t]));
+      function esc(s) { return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+      const TIPO_BADGE = { ENTRADA:"bg-success", SALIDA:"bg-primary", DEVOLUCION:"bg-info text-dark", MERMA:"bg-warning text-dark", AJUSTE:"bg-secondary" };
+
+      function abrirDetalleTraz(id) {
+        const t = regTraz[id];
+        if (!t) { SPO.toast("No se encontró el movimiento.", "danger"); return; }
+        const campo = (l, v, extra="") => `<div class="col-md-6"><div class="detalle-campo"><span class="detalle-label">${l}</span><span class="detalle-valor ${extra}">${v}</span></div></div>`;
+        const clase = TIPO_BADGE[t.tipoMovimiento] || "bg-dark";
+        document.getElementById("detalleTrazBody").innerHTML =
+          campo("Tipo", `<span class="badge ${clase}">${esc(t.tipoMovimiento)}</span>`) +
+          campo("Cantidad", `<strong>${esc(t.cantidad)}</strong>`) +
+          `<div class="col-12"><div class="detalle-campo"><span class="detalle-label">Material</span><span class="detalle-valor">${esc(t.materialCodigo)} — ${esc(t.materialNombre)}</span></div></div>` +
+          campo("Fecha", esc(t.fecha)) +
+          campo("Usuario Responsable", esc(t.usuarioNombre)) +
+          campo("Proyecto", esc(t.proyectoCodigo || "—")) +
+          campo("Orden de Compra", esc(t.ordenCompraCodigo || "—"));
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetalleTraz")).show();
+      }
+
+      function abrirEditarTraz(id) {
+        const t = regTraz[id];
+        if (!t) { SPO.toast("No se encontró el movimiento.", "danger"); return; }
+        document.getElementById("edit_id_traz").value = t.id;
+        document.getElementById("edit_tipoMov").value = t.tipoMovimiento || "ENTRADA";
+        document.getElementById("edit_cant").value = t.cantidad;
+        document.getElementById("edit_traz_contexto").textContent = `${t.materialCodigo} — ${t.materialNombre} · ${t.usuarioNombre}`;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEditarTraz")).show();
+      }
+      document.getElementById("formEditarTraz")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("edit_id_traz").value;
+        const data = { tipoMovimiento: document.getElementById("edit_tipoMov").value, cantidad: document.getElementById("edit_cant").value };
+        const res = await fetch(`/api/trazabilidad/${id}`, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(data) });
+        if (res.ok) { bootstrap.Modal.getInstance(document.getElementById("modalEditarTraz"))?.hide(); SPO.toast("Movimiento actualizado.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error:"Error al actualizar." })); SPO.toast(err.error || "Error al actualizar.", "danger"); }
+      });
+
+      let idEliminarTraz = null;
+      function abrirEliminarTraz(id) {
+        idEliminarTraz = id;
+        const t = regTraz[id];
+        document.getElementById("eliminarTrazNombre").textContent = t ? (t.tipoMovimiento + " de " + t.materialCodigo) : "trazabilidad";
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEliminarTraz")).show();
+      }
+      document.getElementById("btnConfirmarEliminarTraz")?.addEventListener("click", async () => {
+        if (idEliminarTraz == null) return;
+        const btn = document.getElementById("btnConfirmarEliminarTraz");
+        btn.disabled = true; btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Eliminando…`;
+        try {
+          const res = await fetch(`/api/trazabilidad/${idEliminarTraz}`, { method:"DELETE" });
+          if (res.ok) { bootstrap.Modal.getInstance(document.getElementById("modalEliminarTraz"))?.hide(); SPO.toast("Movimiento eliminado.", "success"); setTimeout(() => location.reload(), 700); }
+          else { const err = await res.json().catch(() => ({ error:"Error al eliminar." })); SPO.toast(err.error || "Error al eliminar.", "danger"); }
+        } finally { btn.disabled = false; btn.innerHTML = `<i class="bi bi-trash"></i> Sí, eliminar`; }
+      });
+
+      SPO.paginacion.init("tablaTrazabilidad", {
+        porPagina: 100,
+        buscarInput: "busquedaTrazabilidad",
+        extraFiltro: (tr) => {
+          const cod = document.getElementById("filtroMaterialValor").value.trim();
+          if (!cod) return true;
+          return (tr.getAttribute("data-material") || "") === cod;
+        },
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,312 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head th:replace="fragments/head :: head('Proyectos de Ensamble')"></head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <main class="app-main container pb-5">
+      <div class="page-header">
+        <div>
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-kanban"></i></span>
+            Proyectos de Ensamble de Celdas
+          </h4>
+          <p class="page-subtitle">Gestión y delegación de proyectos de producción</p>
+        </div>
+        <button th:if="${rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}"
+                class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProyecto">
+          <i class="bi bi-plus-lg"></i> Nuevo Proyecto
+        </button>
+      </div>
+
+      <div class="card card-spo">
+        <div class="tabla-toolbar">
+          <div class="tabla-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="busquedaProyectos" class="form-control" placeholder="Buscar por código, cliente, responsable..." />
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="tablaProyectos">
+            <thead class="table-dark">
+              <tr>
+                <th>Código</th>
+                <th>Cliente / Obra</th>
+                <th>Fecha Inicio</th>
+                <th>Entrega Estimada</th>
+                <th>Responsable Delegado</th>
+                <th>Estado</th>
+                <th class="text-center text-nowrap">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="p : ${proyectos}" th:data-id="${p.idProyecto}">
+                <td class="fw-bold text-nowrap" th:text="${p.codigo}"></td>
+                <td th:text="${p.cliente}"></td>
+                <td th:text="${p.fechaInicio}"></td>
+                <td th:text="${p.fechaEntregaEstimada ?: '-'}"></td>
+                <td><span class="badge bg-secondary" th:text="${p.responsable ?: 'Sin asignar'}"></span></td>
+                <td><span class="badge bg-info text-dark" th:text="${p.estado}"></span></td>
+                <td class="text-center text-nowrap">
+                  <div class="btn-group btn-group-sm acciones-grupo">
+                    <button type="button" class="btn btn-outline-info" th:onclick="'abrirDetalleProyecto(' + ${p.idProyecto} + ')'" title="Ver detalle">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button th:if="${rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}" type="button"
+                            class="btn btn-outline-warning" th:onclick="'abrirEditarProyecto(' + ${p.idProyecto} + ')'" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button th:if="${rolActual == 'JEFE_PRODUCCION' or rolActual == 'ADMIN'}" type="button"
+                            class="btn btn-outline-danger" th:onclick="'abrirEliminarProyecto(' + ${p.idProyecto} + ')'" title="Eliminar">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(proyectos)}" data-spo-ignore="true">
+                <td colspan="7" class="text-center text-muted py-4">No hay proyectos registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal Nuevo Proyecto -->
+    <div class="modal fade" id="modalProyecto" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-kanban"></i> Registrar y Asignar Proyecto</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="formProyecto">
+            <div class="modal-body">
+              <div class="mb-2">
+                <label for="codigo" class="form-label fw-semibold small">Código de Proyecto *</label>
+                <input type="text" id="codigo" class="form-control" placeholder="Ej. PE-SAYA-S03-K8810" required />
+              </div>
+              <div class="mb-2">
+                <label for="cliente" class="form-label fw-semibold small">Cliente / Subestación *</label>
+                <input type="text" id="cliente" class="form-control" required />
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label for="fechaInicio" class="form-label fw-semibold small">Fecha de Inicio *</label>
+                  <input type="date" id="fechaInicio" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                  <label for="fechaEntregaEstimada" class="form-label fw-semibold small">Entrega Estimada *</label>
+                  <input type="date" id="fechaEntregaEstimada" class="form-control" required />
+                </div>
+              </div>
+              <div class="mb-2">
+                <label for="responsable" class="form-label fw-semibold small">Delegar a (Supervisor / Técnico) *</label>
+                <input type="text" id="responsable" class="form-control" placeholder="Escriba el nombre del responsable" required />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar Proyecto</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Ver Detalle Proyecto -->
+    <div class="modal fade" id="modalDetalleProyecto" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-info-circle"></i> Detalle del Proyecto</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body"><div id="detalleProyectoBody" class="row g-3"></div></div>
+          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar Proyecto -->
+    <div class="modal fade" id="modalEditarProyecto" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header navbar-spo text-white">
+            <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Proyecto</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="formEditarProyecto">
+            <div class="modal-body">
+              <input type="hidden" id="edit_id_proyecto" />
+              <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                  <label for="edit_codigo" class="form-label fw-semibold small">Código *</label>
+                  <input type="text" id="edit_codigo" class="form-control" required />
+                </div>
+                <div class="col-md-8">
+                  <label for="edit_cliente" class="form-label fw-semibold small">Cliente / Obra *</label>
+                  <input type="text" id="edit_cliente" class="form-control" required />
+                </div>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label for="edit_fechaInicio" class="form-label fw-semibold small">Fecha de Inicio *</label>
+                  <input type="date" id="edit_fechaInicio" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                  <label for="edit_fechaEntregaEstimada" class="form-label fw-semibold small">Entrega Estimada</label>
+                  <input type="date" id="edit_fechaEntregaEstimada" class="form-control" />
+                </div>
+              </div>
+              <div class="row g-2">
+                <div class="col-md-8">
+                  <label for="edit_responsable" class="form-label fw-semibold small">Responsable</label>
+                  <input type="text" id="edit_responsable" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                  <label for="edit_estado" class="form-label fw-semibold small">Estado</label>
+                  <select id="edit_estado" class="form-select">
+                    <option value="EN_PROCESO">EN_PROCESO</option>
+                    <option value="CERRADO">CERRADO</option>
+                    <option value="ENTREGADO">ENTREGADO</option>
+                    <option value="SUSPENDIDO">SUSPENDIDO</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar Cambios</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Eliminar Proyecto -->
+    <div class="modal fade" id="modalEliminarProyecto" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Eliminar Proyecto</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-2">¿Seguro que deseas eliminar el proyecto <strong id="eliminarProyectoNombre">—</strong>?</p>
+            <p class="text-danger small mb-0"><i class="bi bi-info-circle"></i> Esta acción no se puede deshacer. Si el proyecto tiene solicitudes, pruebas o materiales asociados, la base de datos impedirá el borrado.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger" id="btnConfirmarEliminarProyecto"><i class="bi bi-trash"></i> Sí, eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script th:inline="javascript">
+      const PROYECTOS_REG = /*[[${proyectos.![{
+        'id': idProyecto,
+        'codigo': codigo,
+        'cliente': cliente,
+        'fechaInicio': (fechaInicio != null ? #temporals.format(fechaInicio, 'yyyy-MM-dd') : null),
+        'fechaEntregaEstimada': (fechaEntregaEstimada != null ? #temporals.format(fechaEntregaEstimada, 'yyyy-MM-dd') : null),
+        'responsable': responsable,
+        'estado': estado
+      }]}]]*/ [];
+    </script>
+    <script>
+      const regProyectos = Object.fromEntries((PROYECTOS_REG || []).map((p) => [p.id, p]));
+      function esc(s) { return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+      function fmtFechaLarga(v) {
+        if (!v) return "—";
+        const d = new Date(v + "T00:00:00");
+        return isNaN(d) ? String(v) : d.toLocaleDateString("es-PE", { day:"2-digit", month:"2-digit", year:"numeric" });
+      }
+      const ESTADO_BADGE = { EN_PROCESO:"bg-info text-dark", CERRADO:"bg-secondary", ENTREGADO:"bg-success", SUSPENDIDO:"bg-warning text-dark" };
+
+      // --- Alta (POST) ---
+      document.getElementById("formProyecto")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = {
+          codigo: document.getElementById("codigo").value.trim(),
+          cliente: document.getElementById("cliente").value.trim(),
+          fechaInicio: document.getElementById("fechaInicio").value,
+          fechaEntregaEstimada: document.getElementById("fechaEntregaEstimada").value,
+          responsable: document.getElementById("responsable").value.trim(),
+        };
+        const res = await fetch("/api/produccion/proyectos", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(data) });
+        if (res.ok) { SPO.toast("Proyecto registrado.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error:"Error al registrar." })); SPO.toast(err.error, "danger"); }
+      });
+
+      // --- Ver Detalle ---
+      function abrirDetalleProyecto(id) {
+        const p = regProyectos[id];
+        if (!p) { SPO.toast("No se encontró el proyecto.", "danger"); return; }
+        const campo = (l, v, extra="") => `<div class="col-md-6"><div class="detalle-campo"><span class="detalle-label">${l}</span><span class="detalle-valor ${extra}">${v}</span></div></div>`;
+        const clase = ESTADO_BADGE[p.estado] || "bg-secondary";
+        document.getElementById("detalleProyectoBody").innerHTML =
+          campo("Código", esc(p.codigo), "fw-bold") +
+          campo("Estado", `<span class="badge ${clase}">${esc(p.estado)}</span>`) +
+          `<div class="col-12"><div class="detalle-campo"><span class="detalle-label">Cliente / Obra</span><span class="detalle-valor">${esc(p.cliente)}</span></div></div>` +
+          campo("Fecha de Inicio", fmtFechaLarga(p.fechaInicio)) +
+          campo("Entrega Estimada", fmtFechaLarga(p.fechaEntregaEstimada)) +
+          campo("Responsable", esc(p.responsable || "Sin asignar"));
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetalleProyecto")).show();
+      }
+
+      // --- Editar ---
+      function abrirEditarProyecto(id) {
+        const p = regProyectos[id];
+        if (!p) { SPO.toast("No se encontró el proyecto.", "danger"); return; }
+        document.getElementById("edit_id_proyecto").value = p.id;
+        document.getElementById("edit_codigo").value = p.codigo || "";
+        document.getElementById("edit_cliente").value = p.cliente || "";
+        document.getElementById("edit_fechaInicio").value = p.fechaInicio || "";
+        document.getElementById("edit_fechaEntregaEstimada").value = p.fechaEntregaEstimada || "";
+        document.getElementById("edit_responsable").value = p.responsable || "";
+        document.getElementById("edit_estado").value = p.estado || "EN_PROCESO";
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEditarProyecto")).show();
+      }
+      document.getElementById("formEditarProyecto")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("edit_id_proyecto").value;
+        const data = {
+          codigo: document.getElementById("edit_codigo").value.trim(),
+          cliente: document.getElementById("edit_cliente").value.trim(),
+          fechaInicio: document.getElementById("edit_fechaInicio").value,
+          fechaEntregaEstimada: document.getElementById("edit_fechaEntregaEstimada").value || null,
+          responsable: document.getElementById("edit_responsable").value.trim() || null,
+          estado: document.getElementById("edit_estado").value,
+        };
+        const res = await fetch(`/api/produccion/proyectos/${id}`, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(data) });
+        if (res.ok) { bootstrap.Modal.getInstance(document.getElementById("modalEditarProyecto"))?.hide(); SPO.toast("Proyecto actualizado.", "success"); setTimeout(() => location.reload(), 700); }
+        else { const err = await res.json().catch(() => ({ error:"Error al actualizar." })); SPO.toast(err.error || "Error al actualizar.", "danger"); }
+      });
+
+      // --- Eliminar ---
+      let idEliminarProyecto = null;
+      function abrirEliminarProyecto(id) {
+        idEliminarProyecto = id;
+        const p = regProyectos[id];
+        document.getElementById("eliminarProyectoNombre").textContent = p ? (p.codigo + " — " + p.cliente) : "el proyecto seleccionado";
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("modalEliminarProyecto")).show();
+      }
+      document.getElementById("btnConfirmarEliminarProyecto")?.addEventListener("click", async () => {
+        if (idEliminarProyecto == null) return;
+        const btn = document.getElementById("btnConfirmarEliminarProyecto");
+        btn.disabled = true; btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Eliminando…`;
+        try {
+          const res = await fetch(`/api/produccion/proyectos/${idEliminarProyecto}`, { method:"DELETE" });
+          if (res.ok) { bootstrap.Modal.getInstance(document.getElementById("modalEliminarProyecto"))?.hide(); SPO.toast("Proyecto eliminado.", "success"); setTimeout(() => location.reload(), 700); }
+          else { const err = await res.json().catch(() => ({ error:"Error al eliminar." })); SPO.toast(err.error || "Error al eliminar.", "danger"); }
+        } finally { btn.disabled = false; btn.innerHTML = `<i class="bi bi-trash"></i> Sí, eliminar`; }
+      });
+
+      SPO.paginacion.init("tablaProyectos", { porPagina: 100, buscarInput: "busquedaProyectos" });
+    </script>
+  </body>
+</html>

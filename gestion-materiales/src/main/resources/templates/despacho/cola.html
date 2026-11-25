@@ -1,0 +1,208 @@
+<!doctype html>
+<html xmlns:th="http://thymeleaf.org" lang="es">
+  <head th:replace="fragments/head :: head('Cola e Historial de Despacho')"></head>
+  <body class="bg-light">
+    <div th:replace="~{fragments/navbar :: menu}"></div>
+
+    <main class="app-main container pb-5">
+      <div class="page-header">
+        <div>
+          <h4 class="page-title">
+            <span class="title-icon"><i class="bi bi-box-arrow-right"></i></span>
+            Solicitudes / OTI Listas para Despacho (FIFO)
+          </h4>
+          <p class="page-subtitle">Seleccione el código del material entregado y confirme la cantidad</p>
+        </div>
+      </div>
+
+      <div th:if="${#lists.isEmpty(solicitudes)}" class="alert alert-info">
+        <i class="bi bi-info-circle"></i> No hay órdenes pendientes de despacho en este momento.
+      </div>
+
+      <div th:each="sol : ${solicitudes}" class="card card-spo mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span class="fw-semibold" th:text="'OTI-' + ${#numbers.formatInteger(sol.idSolicitud, 4)} + ' — Proyecto: ' + ${sol.proyecto.codigo} + ' (' + ${sol.proyecto.cliente} + ')'"></span>
+          <span class="badge bg-primary" th:text="${sol.estado}"></span>
+        </div>
+        <div class="card-body">
+          <form class="formDespacho" th:data-idsol="${sol.idSolicitud}">
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Material / Equipo</th>
+                    <th>Ubicación</th>
+                    <th class="text-center">Pendiente</th>
+                    <th>Confirmar Código Entregado *</th>
+                    <th style="width: 150px">Cantidad *</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="det,iter : ${sol.detalles}"
+                      th:if="${det.cantidadSolicitada - det.cantidadDespachada > 0}"
+                      class="filaDetalle" th:data-iddet="${det.idDetalleSolicitud}"
+                      th:data-idsol="${sol.idSolicitud}"
+                      th:data-trig="${sol.idSolicitud + '_' + iter.index}">
+                    <td>
+                      <div class="fw-semibold" th:text="${det.material.nombre}"></div>
+                      <small class="text-muted">Esperado: <code th:text="${det.material.codigo}"></code></small>
+                    </td>
+                    <td class="small text-muted" th:text="${det.material.ubicacion ?: 'Almacén General'}"></td>
+                    <td class="text-center fw-bold" th:text="${det.cantidadSolicitada - det.cantidadDespachada}"></td>
+                    <td>
+                      <div class="buscador-campo input-group input-group-sm">
+                        <input type="hidden" class="codigoInput" required />
+                        <input type="text" class="form-control form-control-sm placeholder-muted codigoTexto" placeholder="Buscar código entregado..." readonly />
+                        <button type="button" class="btn btn-outline-primary btn-sm" th:onclick="'abrirBuscadorCodigo(' + ${sol.idSolicitud} + ', \'' + ${sol.idSolicitud} + '_' + ${iter.index} + '\')'">
+                          <i class="bi bi-search"></i>
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <input type="number" class="form-control form-control-sm cantInput" aria-label="Cantidad a entregar" min="0"
+                             th:max="${det.cantidadSolicitada - det.cantidadDespachada}"
+                             th:value="${det.cantidadSolicitada - det.cantidadDespachada}" required />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button type="submit" class="btn btn-success fw-semibold">
+              <i class="bi bi-check2-circle"></i> Registrar Despacho a Taller
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- HISTORIAL COMPLETO DE DESPACHOS -->
+      <div class="mt-5">
+        <div class="page-header">
+          <h5 class="page-title">
+            <span class="title-icon"><i class="bi bi-clock-history"></i></span>
+            Historial General de Despachos
+          </h5>
+        </div>
+        <div class="card card-spo">
+          <div class="tabla-toolbar">
+            <div class="tabla-search">
+              <i class="bi bi-search"></i>
+              <input type="text" id="busquedaHistorialDesp" class="form-control" placeholder="Buscar por despacho, OTI o proyecto..." />
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tablaHistorialDesp">
+              <thead class="table-dark">
+                <tr>
+                  <th>N° Despacho / OTI</th>
+                  <th>Proyecto</th>
+                  <th>Materiales Entregados</th>
+                  <th>Despachado por</th>
+                  <th>Fecha</th>
+                  <th>Estado en Taller</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:if="${#lists.isEmpty(historialDespachos)}" data-spo-ignore="true">
+                  <td colspan="6" class="text-center text-muted py-3">Aún no se han registrado despachos.</td>
+                </tr>
+                <tr th:each="d : ${historialDespachos}">
+                  <td class="fw-bold text-nowrap" th:text="'DESP-' + ${#numbers.formatInteger(d.idDespacho, 4)} + ' (OTI-' + ${#numbers.formatInteger(d.solicitud.idSolicitud, 4)} + ')'"></td>
+                  <td th:text="${d.solicitud.proyecto.codigo + ' - ' + d.solicitud.proyecto.cliente}"></td>
+                  <td class="small">
+                    <ul class="mb-0 ps-3">
+                      <li th:each="det : ${d.detalles}" th:text="${det.detalleSolicitud.material.codigo + ' — ' + det.detalleSolicitud.material.nombre + ' (Cant: ' + det.cantidadEntregada + ')'}"></li>
+                    </ul>
+                  </td>
+                  <td class="small" th:text="${d.usuarioAlmacenero.nombreCompleto}"></td>
+                  <td class="small text-nowrap" th:text="${#temporals.format(d.fechaDespacho, 'dd/MM/yyyy HH:mm')}"></td>
+                  <td>
+                    <span th:if="${d.estado == 'PENDIENTE_CONFIRMACION'}" class="badge bg-warning text-dark">
+                      DESPACHADO — Falta confirmación
+                    </span>
+                    <span th:if="${d.estado != 'PENDIENTE_CONFIRMACION'}" class="badge bg-success">
+                      CONFIRMADO EN TALLER
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div th:replace="~{fragments/buscador-modal :: buscador}"></div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script th:inline="javascript">
+      // Lista de { idSol, materiales: [{codigo, nombre}] } generada por Thymeleaf
+      const COLA_JSON = /*[[${solicitudes.![
+          { 'idSol': idSolicitud,
+            'materiales': detalles.![{ 'codigo': material.codigo, 'nombre': material.nombre }] }
+        ]}]]*/ [];
+      const MATERIALES_POR_SOL = {};
+      (COLA_JSON || []).forEach((s) => { MATERIALES_POR_SOL[s.idSol] = s.materiales || []; });
+    </script>
+    <th:block th:replace="fragments/scripts :: scripts"></th:block>
+    <script>
+      function abrirBuscadorCodigo(idSol, trigId) {
+        const datos = MATERIALES_POR_SOL[idSol] || [];
+        const tr = document.querySelector('.filaDetalle[data-trig="' + trigId + '"]');
+        SPO.buscadorModal.abrir({
+          titulo: "Confirmar código entregado",
+          icono: "bi-upc-scan",
+          datos: datos,
+          placeholder: "Buscar por código o nombre...",
+          buscarEn: ["codigo", "nombre"],
+          columnas: [
+            { titulo: "Código", campo: "codigo", clase: "fw-bold text-nowrap" },
+            { titulo: "Equipo / Material", campo: "nombre" },
+          ],
+          vacio: "No hay materiales disponibles para esta OTI.",
+          alSeleccionar: (m) => {
+            if (tr) {
+              tr.querySelector(".codigoInput").value = m.codigo;
+              tr.querySelector(".codigoTexto").value = m.codigo + " — " + m.nombre;
+            }
+          },
+        });
+      }
+
+      document.querySelectorAll(".formDespacho").forEach((form) => {
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const idSolicitud = parseInt(form.getAttribute("data-idsol"), 10);
+          const idsDetalleSolicitud = [];
+          const codigosDigitados = [];
+          const cantidadesEntregadas = [];
+
+          form.querySelectorAll(".filaDetalle").forEach((tr) => {
+            idsDetalleSolicitud.push(parseInt(tr.getAttribute("data-iddet"), 10));
+            codigosDigitados.push(tr.querySelector(".codigoInput").value.trim());
+            cantidadesEntregadas.push(parseInt(tr.querySelector(".cantInput").value, 10));
+          });
+
+          if (codigosDigitados.some((c) => !c)) {
+            SPO.toast("Confirme el código entregado en todas las filas.", "warning");
+            return;
+          }
+
+          const res = await fetch("/api/despacho/registrar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idSolicitud, idsDetalleSolicitud, codigosDigitados, cantidadesEntregadas }),
+          });
+          if (res.ok) {
+            SPO.toast("Despacho registrado. Pendiente de confirmación por el operario.", "success");
+            setTimeout(() => location.reload(), 900);
+          } else {
+            const err = await res.json().catch(() => ({ error: "Error al registrar." }));
+            SPO.toast(err.error, "danger");
+          }
+        });
+      });
+
+      SPO.paginacion.init("tablaHistorialDesp", { porPagina: 100, buscarInput: "busquedaHistorialDesp" });
+    </script>
+  </body>
+</html>
